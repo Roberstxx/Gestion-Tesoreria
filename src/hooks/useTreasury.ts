@@ -1,24 +1,59 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Transaction, Category, Period, AppSettings, TransactionType } from '@/types';
-import * as storage from '@/utils/storage';
 import { calculateBalance, getMonthlyStats, getMonthlyComparisons, getWeeklyBreakdown } from '@/utils/calculations';
-import { startOfMonth, endOfMonth, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
+import { getTreasuryRepository } from '@/data';
+import { getDefaultCategories } from '@/utils/storage';
 
 export function useTreasury() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [periods, setPeriods] = useState<Period[]>([]);
-  const [settings, setSettings] = useState<AppSettings>(storage.getSettings());
+  const [settings, setSettings] = useState<AppSettings>({
+    currentPeriodId: null,
+    hasCompletedOnboarding: false,
+    theme: 'light',
+  });
   const [loading, setLoading] = useState(true);
+  const repository = useMemo(() => getTreasuryRepository(), []);
 
-  // Load data from localStorage
+  // Load data from repository
   useEffect(() => {
-    setTransactions(storage.getTransactions());
-    setCategories(storage.getCategories());
-    setPeriods(storage.getPeriods());
-    setSettings(storage.getSettings());
-    setLoading(false);
-  }, []);
+    let isMounted = true;
+
+    const loadSnapshot = async () => {
+      let snapshot = await repository.getSnapshot();
+      if (!isMounted) return;
+
+      if (snapshot.categories.length === 0) {
+        const defaults = getDefaultCategories();
+        await Promise.all(
+          defaults.map((category) =>
+            repository.addCategory({
+              name: category.name,
+              type: category.type,
+              isDefault: category.isDefault,
+            })
+          )
+        );
+        snapshot = await repository.getSnapshot();
+      }
+
+      if (!isMounted) return;
+
+      setTransactions(snapshot.transactions);
+      setCategories(snapshot.categories);
+      setPeriods(snapshot.periods);
+      setSettings(snapshot.settings);
+      setLoading(false);
+    };
+
+    loadSnapshot();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [repository]);
 
   // Current period
   const currentPeriod = useMemo(() => {
@@ -45,89 +80,99 @@ export function useTreasury() {
   }, [transactions, currentPeriod]);
 
   // Transaction operations
-  const addTransaction = useCallback((transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newTransaction: Transaction = {
-      ...transaction,
-      id: storage.generateId(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    storage.addTransaction(newTransaction);
-    setTransactions(storage.getTransactions());
+  const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
+    const newTransaction = await repository.addTransaction(transaction);
+    const snapshot = await repository.getSnapshot();
+    setTransactions(snapshot.transactions);
     return newTransaction;
-  }, []);
+  }, [repository]);
 
-  const updateTransaction = useCallback((id: string, updates: Partial<Transaction>) => {
-    storage.updateTransaction(id, updates);
-    setTransactions(storage.getTransactions());
-  }, []);
+  const updateTransaction = useCallback(async (id: string, updates: Partial<Transaction>) => {
+    await repository.updateTransaction(id, updates);
+    const snapshot = await repository.getSnapshot();
+    setTransactions(snapshot.transactions);
+  }, [repository]);
 
-  const deleteTransaction = useCallback((id: string) => {
-    storage.deleteTransaction(id);
-    setTransactions(storage.getTransactions());
-  }, []);
+  const deleteTransaction = useCallback(async (id: string) => {
+    await repository.deleteTransaction(id);
+    const snapshot = await repository.getSnapshot();
+    setTransactions(snapshot.transactions);
+  }, [repository]);
 
   // Category operations
-  const addCategory = useCallback((category: Omit<Category, 'id'>) => {
-    const newCategory: Category = {
-      ...category,
-      id: storage.generateId(),
-    };
-    storage.addCategory(newCategory);
-    setCategories(storage.getCategories());
+  const addCategory = useCallback(async (category: Omit<Category, 'id'>) => {
+    const newCategory = await repository.addCategory(category);
+    const snapshot = await repository.getSnapshot();
+    setCategories(snapshot.categories);
     return newCategory;
-  }, []);
+  }, [repository]);
 
-  const updateCategory = useCallback((id: string, updates: Partial<Category>) => {
-    storage.updateCategory(id, updates);
-    setCategories(storage.getCategories());
-  }, []);
+  const updateCategory = useCallback(async (id: string, updates: Partial<Category>) => {
+    await repository.updateCategory(id, updates);
+    const snapshot = await repository.getSnapshot();
+    setCategories(snapshot.categories);
+  }, [repository]);
 
-  const deleteCategory = useCallback((id: string) => {
-    storage.deleteCategory(id);
-    setCategories(storage.getCategories());
-  }, []);
+  const deleteCategory = useCallback(async (id: string) => {
+    await repository.deleteCategory(id);
+    const snapshot = await repository.getSnapshot();
+    setCategories(snapshot.categories);
+  }, [repository]);
 
   const getCategoriesByType = useCallback((type: TransactionType) => {
     return categories.filter((c) => c.type === type);
   }, [categories]);
 
   // Period operations
-  const addPeriod = useCallback((period: Omit<Period, 'id' | 'createdAt'>) => {
-    const newPeriod: Period = {
-      ...period,
-      id: storage.generateId(),
-      createdAt: new Date().toISOString(),
-    };
-    storage.addPeriod(newPeriod);
-    setPeriods(storage.getPeriods());
+  const addPeriod = useCallback(async (period: Omit<Period, 'id' | 'createdAt'>) => {
+    const newPeriod = await repository.addPeriod(period);
+    const snapshot = await repository.getSnapshot();
+    setPeriods(snapshot.periods);
     return newPeriod;
-  }, []);
+  }, [repository]);
 
-  const updatePeriod = useCallback((id: string, updates: Partial<Period>) => {
-    storage.updatePeriod(id, updates);
-    setPeriods(storage.getPeriods());
-  }, []);
+  const updatePeriod = useCallback(async (id: string, updates: Partial<Period>) => {
+    await repository.updatePeriod(id, updates);
+    const snapshot = await repository.getSnapshot();
+    setPeriods(snapshot.periods);
+  }, [repository]);
 
   // Settings operations
-  const updateSettings = useCallback((updates: Partial<AppSettings>) => {
-    storage.updateSettings(updates);
-    setSettings(storage.getSettings());
-  }, []);
+  const updateSettings = useCallback(async (updates: Partial<AppSettings>) => {
+    const nextSettings = await repository.updateSettings(updates);
+    setSettings(nextSettings);
+  }, [repository]);
 
-  const completeOnboarding = useCallback((periodId: string) => {
-    storage.updateSettings({
+  const completeOnboarding = useCallback(async (periodId: string) => {
+    const nextSettings = await repository.updateSettings({
       hasCompletedOnboarding: true,
       currentPeriodId: periodId,
     });
-    setSettings(storage.getSettings());
-  }, []);
+    setSettings(nextSettings);
+  }, [repository]);
 
   // Initialize default categories
-  const initializeCategories = useCallback(() => {
-    storage.initializeDefaultCategories();
-    setCategories(storage.getCategories());
-  }, []);
+  const initializeCategories = useCallback(async () => {
+    const snapshot = await repository.getSnapshot();
+    if (snapshot.categories.length > 0) {
+      setCategories(snapshot.categories);
+      return;
+    }
+
+    const defaults = getDefaultCategories();
+    await Promise.all(
+      defaults.map((category) =>
+        repository.addCategory({
+          name: category.name,
+          type: category.type,
+          isDefault: category.isDefault,
+        })
+      )
+    );
+
+    const refreshed = await repository.getSnapshot();
+    setCategories(refreshed.categories);
+  }, [repository]);
 
   // Get stats for a specific month
   const getStatsForMonth = useCallback((month: Date) => {

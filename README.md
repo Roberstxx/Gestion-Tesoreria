@@ -1,73 +1,110 @@
-# Welcome to your Lovable project
+# Gestión de Tesorería
 
-## Project info
+Aplicación de control de ingresos y gastos con panel de indicadores, gráficos y reportes. Incluye un repositorio de datos intercambiable (local/Firebase) y validaciones para mantener consistencia en las métricas y gráficas.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+## ✨ Características
 
-## How can I edit this code?
+- Registro de movimientos (ingresos, donaciones, inversiones, gastos).
+- Gráficas de saldo semanal, ingresos vs gastos y top categorías.
+- Estadísticas mensuales y comparativos.
+- Exportación de reportes en PDF/CSV.
+- Capa de datos preparada para Firebase (Firestore) o almacenamiento local.
+- Login con Firebase Authentication (solo correo/contraseña).
 
-There are several ways of editing your application.
+## 🧱 Tecnologías
 
-**Use Lovable**
+- React + TypeScript + Vite
+- Tailwind + shadcn/ui
+- Recharts
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 🚀 Inicio rápido
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
-
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
-
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
-
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```bash
+npm install
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+## 🗂️ Proveedor de datos
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+La app soporta dos modos de datos:
 
-**Use GitHub Codespaces**
+| Proveedor | Descripción | Estado |
+| --- | --- | --- |
+| `local` | LocalStorage para desarrollo rápido. | ⚠️ Opcional |
+| `firebase` | Firestore para producción. | ✅ Activo por defecto |
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+Configura el proveedor en el archivo `.env`:
 
-## What technologies are used for this project?
+```bash
+VITE_DATA_PROVIDER=firebase
+# o
+VITE_DATA_PROVIDER=local
+```
 
-This project is built with:
+## 🔧 Configuración Firebase (Firestore)
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. Crea un proyecto en Firebase y habilita **Firestore**.
+2. Copia las credenciales de tu app web y crea un `.env` siguiendo `.env.example` (incluye `measurementId` si usas Analytics).
+3. Cambia `VITE_DATA_PROVIDER=firebase`.
 
-## How can I deploy this project?
+## 🔐 Login con Firebase Authentication
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+La app usa **solo inicio de sesión** (sin registro). El alta de usuarios se gestiona desde Firebase.
 
-## Can I connect a custom domain to my Lovable project?
+1. Activa el proveedor **Email/Password** en Firebase Authentication.
+2. Crea los usuarios desde la consola de Firebase.
+3. Inicia sesión en `/login` con las credenciales configuradas.
 
-Yes, you can!
+### Estructura esperada en Firestore
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+Colecciones:
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+- `transactions`
+- `categories`
+- `periods`
+- `settings` (documento `app`)
+
+Campos principales:
+
+**transactions**
+- `id`, `type`, `amount`, `date`, `categoryId`, `description`, `tags`, `paymentMethod`, `receipt`, `createdAt`, `updatedAt`
+
+**categories**
+- `id`, `name`, `type`, `isDefault`
+
+**periods**
+- `id`, `name`, `startDate`, `endDate`, `initialFund`, `createdAt`
+
+**settings/app**
+- `currentPeriodId`, `hasCompletedOnboarding`, `theme`
+
+## ✅ Consistencia de datos
+
+Antes de usar los datos, la app normaliza la información para mantener las gráficas consistentes:
+
+- Elimina transacciones inválidas (monto <= 0, fecha inválida, tipo desconocido).
+- Normaliza fechas a `yyyy-MM-dd`.
+- Crea categorías de respaldo `Sin categoría` por tipo si hace falta.
+- Asegura que `currentPeriodId` apunte a un periodo válido.
+- Normaliza la entrada antes de guardar movimientos en la base de datos.
+
+La normalización se ejecuta al leer el snapshot y garantiza que las métricas no se rompan.
+
+## 🧪 Scripts
+
+```bash
+npm run dev
+npm run build
+npm run lint
+```
+
+## 🧩 Ubicación del repositorio de datos
+
+- `src/data/treasuryRepository.ts`: interfaz base
+- `src/data/localTreasuryRepository.ts`: implementación LocalStorage
+- `src/data/firebase/treasuryRepository.ts`: implementación Firestore
+- `src/utils/consistency.ts`: normalización y consistencia
+
+---
+
+Si necesitas ayuda para conectar reglas de seguridad o autenticación en Firebase, dímelo y te dejo la plantilla lista.

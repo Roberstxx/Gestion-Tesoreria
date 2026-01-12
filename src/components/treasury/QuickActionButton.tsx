@@ -57,10 +57,10 @@ interface QuickActionsGridProps {
 }
 
 export function QuickActionsGrid({ onSelect, className }: QuickActionsGridProps) {
-  const types: TransactionType[] = ['income', 'donation', 'investment', 'expense'];
+  const types: TransactionType[] = ['income', 'donation', 'expense'];
 
   return (
-    <div className={cn('grid grid-cols-4 gap-2 sm:gap-3', className)}>
+    <div className={cn('grid grid-cols-3 gap-2 sm:gap-3', className)}>
       {types.map((type) => (
         <QuickActionButton key={type} type={type} onClick={() => onSelect(type)} />
       ))}

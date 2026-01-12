@@ -63,6 +63,9 @@ export function TransactionItem({
         <p className="text-caption mt-0.5">
           {category?.name} • {format(parseISO(transaction.date), 'd MMM yyyy', { locale: es })}
         </p>
+        <p className="text-xs text-muted-foreground">
+          Registrado: {format(parseISO(transaction.createdAt), "d MMM yyyy '•' HH:mm", { locale: es })}
+        </p>
       </div>
 
       {/* Amount */}

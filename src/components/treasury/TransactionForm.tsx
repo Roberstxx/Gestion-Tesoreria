@@ -127,9 +127,12 @@ export function TransactionForm({
   const typeButtons: { value: TransactionType; label: string; emoji: string }[] = [
     { value: 'income', label: 'Ingreso', emoji: '💰' },
     { value: 'donation', label: 'Donación', emoji: '🎁' },
-    { value: 'investment', label: 'Inversión', emoji: '📦' },
     { value: 'expense', label: 'Gasto', emoji: '💸' },
   ];
+
+  if (type === 'investment' || initialData?.type === 'investment' || initialType === 'investment') {
+    typeButtons.splice(2, 0, { value: 'investment', label: 'Inversión', emoji: '📦' });
+  }
 
   const typeStyles: Record<TransactionType, string> = {
     income: 'border-income bg-income/10 text-income',

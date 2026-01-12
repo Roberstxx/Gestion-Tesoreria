@@ -8,7 +8,7 @@ Aplicación de control de ingresos y gastos con panel de indicadores, gráficos 
 - Gráficas de saldo semanal, ingresos vs gastos y top categorías.
 - Estadísticas mensuales y comparativos.
 - Exportación de reportes en PDF/CSV.
-- Capa de datos preparada para Firebase o almacenamiento local.
+- Capa de datos preparada para Firebase (Firestore) o almacenamiento local.
 
 ## 🧱 Tecnologías
 
@@ -29,21 +29,21 @@ La app soporta dos modos de datos:
 
 | Proveedor | Descripción | Estado |
 | --- | --- | --- |
-| `local` | LocalStorage para desarrollo rápido. | ✅ Activo por defecto |
-| `firebase` | Firestore para producción. | ✅ Listo para conectar |
+| `local` | LocalStorage para desarrollo rápido. | ⚠️ Opcional |
+| `firebase` | Firestore para producción. | ✅ Activo por defecto |
 
 Configura el proveedor en el archivo `.env`:
 
 ```bash
-VITE_DATA_PROVIDER=local
-# o
 VITE_DATA_PROVIDER=firebase
+# o
+VITE_DATA_PROVIDER=local
 ```
 
 ## 🔧 Configuración Firebase (Firestore)
 
 1. Crea un proyecto en Firebase y habilita **Firestore**.
-2. Copia las credenciales de tu app web y crea un `.env` siguiendo `.env.example`.
+2. Copia las credenciales de tu app web y crea un `.env` siguiendo `.env.example` (incluye `measurementId` si usas Analytics).
 3. Cambia `VITE_DATA_PROVIDER=firebase`.
 
 ### Estructura esperada en Firestore
@@ -77,6 +77,7 @@ Antes de usar los datos, la app normaliza la información para mantener las grá
 - Normaliza fechas a `yyyy-MM-dd`.
 - Crea categorías de respaldo `Sin categoría` por tipo si hace falta.
 - Asegura que `currentPeriodId` apunte a un periodo válido.
+- Normaliza la entrada antes de guardar movimientos en la base de datos.
 
 La normalización se ejecuta al leer el snapshot y garantiza que las métricas no se rompan.
 

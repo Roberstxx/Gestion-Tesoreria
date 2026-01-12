@@ -1,6 +1,6 @@
 import { Transaction, Category, Period } from '@/types';
 import * as storage from '@/utils/storage';
-import { normalizeTreasurySnapshot } from '@/utils/consistency';
+import { normalizeTreasurySnapshot, normalizeTransactionInput } from '@/utils/consistency';
 import { TreasuryRepository, TreasurySnapshot } from './treasuryRepository';
 
 function persistSnapshot(snapshot: TreasurySnapshot): void {
@@ -29,8 +29,18 @@ export function createLocalTreasuryRepository(): TreasuryRepository {
       return normalized.snapshot;
     },
     async addTransaction(data) {
+      const categories = storage.getCategories();
+      const normalized = normalizeTransactionInput(data, categories);
+      if (!normalized) {
+        throw new Error('Movimiento inválido para guardar.');
+      }
+
+      if (normalized.categories.length !== categories.length) {
+        storage.saveCategories(normalized.categories);
+      }
+
       const newTransaction: Transaction = {
-        ...data,
+        ...normalized.transaction,
         id: storage.generateId(),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),

@@ -166,3 +166,47 @@ export function normalizeTreasurySnapshot(
 
   return { snapshot: normalizedSnapshot, changed };
 }
+
+export type TransactionInput = Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>;
+
+export function normalizeTransactionInput(
+  input: TransactionInput,
+  categories: Category[]
+): { transaction: TransactionInput; categories: Category[]; changed: boolean } | null {
+  if (!input) return null;
+  if (!isTransactionType(input.type)) return null;
+
+  const amount = Number(input.amount);
+  if (!Number.isFinite(amount) || amount <= 0) return null;
+
+  const normalizedDate = normalizeDate(input.date);
+  if (!normalizedDate) return null;
+
+  const updatedCategories = [...categories];
+  const categoryMap = new Map(updatedCategories.map((category) => [category.id, category]));
+
+  let categoryId = input.categoryId;
+  const category = categoryMap.get(categoryId);
+  if (!category || category.type !== input.type) {
+    const fallbackCategory = ensureUncategorizedCategory(updatedCategories, input.type);
+    categoryId = fallbackCategory.id;
+    categoryMap.set(fallbackCategory.id, fallbackCategory);
+  }
+
+  const transaction: TransactionInput = {
+    ...input,
+    amount,
+    date: normalizedDate,
+    categoryId,
+    description: input.description?.trim() || '',
+    tags: input.tags?.filter(Boolean),
+    paymentMethod: input.paymentMethod?.trim() || undefined,
+    receipt: input.receipt?.trim() || undefined,
+  };
+
+  const changed =
+    JSON.stringify(input) !== JSON.stringify(transaction) ||
+    updatedCategories.length !== categories.length;
+
+  return { transaction, categories: updatedCategories, changed };
+}

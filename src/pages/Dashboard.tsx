@@ -1,12 +1,10 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTreasury } from '@/hooks/useTreasury';
 import { AppLayout, StatCard, QuickActionsGrid, BalanceLineChart, IncomeVsExpensesChart, CategoryPieChart, TransactionList } from '@/components/treasury';
 import { Wallet, TrendingUp, Gift, Package, CreditCard, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { generateSeedData, hasSeedData } from '@/utils/seedData';
-import { isLocalProvider } from '@/data';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -17,18 +15,9 @@ export default function Dashboard() {
     currentBalance,
     currentMonthStats,
     monthlyComparisons,
-    settings,
     loading,
     filterTransactions,
   } = useTreasury();
-
-  // Initialize seed data if needed
-  useEffect(() => {
-    if (!loading && isLocalProvider && !settings.hasCompletedOnboarding && !hasSeedData()) {
-      generateSeedData();
-      window.location.reload();
-    }
-  }, [loading, settings.hasCompletedOnboarding, isLocalProvider]);
 
   if (loading) {
     return (

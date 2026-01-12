@@ -9,7 +9,7 @@ import {
 } from 'firebase/firestore';
 import { Transaction, Category, Period, AppSettings } from '@/types';
 import { firestore } from './firebaseClient';
-import { normalizeTreasurySnapshot } from '@/utils/consistency';
+import { normalizeTreasurySnapshot, normalizeTransactionInput } from '@/utils/consistency';
 import { TreasuryRepository } from '../treasuryRepository';
 
 const COLLECTIONS = {
@@ -71,15 +71,42 @@ export function createFirebaseTreasuryRepository(): TreasuryRepository {
       });
 
       if (normalized.changed) {
-        await saveSettings(normalized.snapshot.settings);
+        await Promise.all([
+          saveSettings(normalized.snapshot.settings),
+          ...normalized.snapshot.categories.map((category) =>
+            setDoc(doc(firestore, COLLECTIONS.categories, category.id), category, { merge: true })
+          ),
+          ...normalized.snapshot.periods.map((period) =>
+            setDoc(doc(firestore, COLLECTIONS.periods, period.id), period, { merge: true })
+          ),
+        ]);
       }
 
       return normalized.snapshot;
     },
     async addTransaction(data) {
+      const categories = await fetchCollection<Category>(COLLECTIONS.categories);
+      const normalized = normalizeTransactionInput(data, categories);
+      if (!normalized) {
+        throw new Error('Movimiento inválido para guardar.');
+      }
+
+      const existingCategoryIds = new Set(categories.map((category) => category.id));
+      const newCategories = normalized.categories.filter(
+        (category) => !existingCategoryIds.has(category.id)
+      );
+
+      if (newCategories.length > 0) {
+        await Promise.all(
+          newCategories.map((category) =>
+            setDoc(doc(firestore, COLLECTIONS.categories, category.id), category, { merge: true })
+          )
+        );
+      }
+
       const now = new Date().toISOString();
       const transaction: Omit<Transaction, 'id'> = {
-        ...data,
+        ...normalized.transaction,
         createdAt: now,
         updatedAt: now,
       };

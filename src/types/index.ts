@@ -6,6 +6,7 @@ export interface Transaction {
   id: string;
   type: TransactionType;
   amount: number;
+  investmentAmount?: number;
   date: string; // ISO date string
   categoryId: string;
   description: string;

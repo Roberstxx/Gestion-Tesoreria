@@ -320,6 +320,7 @@ export default function Reports() {
                     <TableHead>Tipo</TableHead>
                     <TableHead>Categoría</TableHead>
                     <TableHead className="hidden sm:table-cell">Descripción</TableHead>
+                    <TableHead className="hidden md:table-cell text-right">Inversión</TableHead>
                     <TableHead className="text-right">Monto</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -336,6 +337,9 @@ export default function Reports() {
                       <TableCell className="hidden sm:table-cell text-muted-foreground text-sm truncate max-w-[200px]">
                         {t.description}
                       </TableCell>
+                      <TableCell className="hidden md:table-cell text-right text-investment">
+                        {t.type === 'income' && t.investmentAmount ? `-${formatCurrency(t.investmentAmount)}` : '—'}
+                      </TableCell>
                       <TableCell className={`text-right font-medium ${
                         t.type === 'income' || t.type === 'donation' ? 'text-income' : 'text-expense'
                       }`}>
@@ -345,7 +349,7 @@ export default function Reports() {
                   ))}
                   {monthTransactions.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
                         No hay movimientos en este mes
                       </TableCell>
                     </TableRow>

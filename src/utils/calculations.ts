@@ -1,22 +1,36 @@
 import { Transaction, MonthlyStats, WeeklyBreakdown, Comparison, Period } from '@/types';
-import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, isWithinInterval, parseISO, format, subMonths, getWeek, eachWeekOfInterval } from 'date-fns';
+import { startOfMonth, endOfMonth, endOfWeek, isWithinInterval, parseISO, format, subMonths, eachWeekOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
+
+export function getInvestmentAmount(transaction: Transaction): number {
+  if (transaction.type === 'investment') return transaction.amount;
+  if (transaction.type === 'income') return transaction.investmentAmount ?? 0;
+  return 0;
+}
+
+export function getTransactionInflow(transaction: Transaction): number {
+  if (transaction.type === 'income' || transaction.type === 'donation') {
+    return transaction.amount;
+  }
+  return 0;
+}
+
+export function getTransactionOutflow(transaction: Transaction): number {
+  if (transaction.type === 'expense' || transaction.type === 'investment') {
+    return transaction.amount;
+  }
+  if (transaction.type === 'income') {
+    return transaction.investmentAmount ?? 0;
+  }
+  return 0;
+}
 
 export function calculateBalance(
   transactions: Transaction[],
   initialFund: number
 ): number {
   return transactions.reduce((balance, t) => {
-    switch (t.type) {
-      case 'income':
-      case 'donation':
-        return balance + t.amount;
-      case 'investment':
-      case 'expense':
-        return balance - t.amount;
-      default:
-        return balance;
-    }
+    return balance + getTransactionInflow(t) - getTransactionOutflow(t);
   }, initialFund);
 }
 
@@ -50,8 +64,7 @@ export function getMonthlyStats(
     .reduce((sum, t) => sum + t.amount, 0);
 
   const investments = monthTransactions
-    .filter((t) => t.type === 'investment')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + getInvestmentAmount(t), 0);
 
   const expenses = monthTransactions
     .filter((t) => t.type === 'expense')
@@ -100,8 +113,7 @@ export function getWeeklyBreakdown(
       .reduce((sum, t) => sum + t.amount, 0);
 
     const investments = weekTransactions
-      .filter((t) => t.type === 'investment')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + getInvestmentAmount(t), 0);
 
     const expenses = weekTransactions
       .filter((t) => t.type === 'expense')

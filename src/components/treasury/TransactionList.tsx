@@ -1,6 +1,6 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { Transaction, Category, TransactionType, TRANSACTION_TYPE_LABELS } from '@/types';
+import { Transaction, Category } from '@/types';
 import { TransactionBadge } from './TransactionBadge';
 import { formatCurrency } from '@/utils/calculations';
 import { format, parseISO } from 'date-fns';
@@ -31,6 +31,8 @@ export function TransactionItem({
   showActions = true,
 }: TransactionItemProps) {
   const isOutflow = transaction.type === 'expense' || transaction.type === 'investment';
+  const investmentAmount =
+    transaction.type === 'income' ? transaction.investmentAmount : undefined;
 
   return (
     <div
@@ -73,6 +75,11 @@ export function TransactionItem({
         >
           {isOutflow ? '-' : '+'}{formatCurrency(transaction.amount)}
         </p>
+        {investmentAmount && investmentAmount > 0 && (
+          <p className="text-xs text-muted-foreground">
+            Inversión: -{formatCurrency(investmentAmount)}
+          </p>
+        )}
       </div>
 
       {/* Actions */}

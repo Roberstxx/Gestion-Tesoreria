@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { cn } from '@/lib/utils';
-import { Transaction, TransactionType, Category, TRANSACTION_TYPE_LABELS } from '@/types';
+import { Transaction, TransactionType, Category } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -38,6 +38,9 @@ export function TransactionForm({
 }: TransactionFormProps) {
   const [type, setType] = useState<TransactionType>(initialData?.type || initialType || 'income');
   const [amount, setAmount] = useState(initialData?.amount?.toString() || '');
+  const [investmentAmount, setInvestmentAmount] = useState(
+    initialData?.investmentAmount?.toString() || ''
+  );
   const [date, setDate] = useState(initialData?.date || format(new Date(), 'yyyy-MM-dd'));
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || '');
   const [description, setDescription] = useState(initialData?.description || '');
@@ -55,11 +58,28 @@ export function TransactionForm({
     }
   }, [type, filteredCategories, categoryId]);
 
+  useEffect(() => {
+    if (type !== 'income') {
+      setInvestmentAmount('');
+      setErrors((prev) => {
+        const { investmentAmount: _, ...rest } = prev;
+        return rest;
+      });
+    }
+  }, [type]);
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
 
     if (!amount || parseFloat(amount) <= 0) {
       newErrors.amount = 'Ingresa un monto válido';
+    }
+
+    if (type === 'income' && investmentAmount) {
+      const parsedInvestment = parseFloat(investmentAmount);
+      if (!Number.isFinite(parsedInvestment) || parsedInvestment < 0) {
+        newErrors.investmentAmount = 'Ingresa un monto de inversión válido';
+      }
     }
 
     if (!date) {
@@ -80,6 +100,10 @@ export function TransactionForm({
     const data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> = {
       type,
       amount: parseFloat(amount),
+      investmentAmount:
+        type === 'income' && investmentAmount && parseFloat(investmentAmount) > 0
+          ? parseFloat(investmentAmount)
+          : undefined,
       date,
       categoryId,
       description: description.trim(),
@@ -91,6 +115,7 @@ export function TransactionForm({
       onSaveAndNew(data);
       // Reset form
       setAmount('');
+      setInvestmentAmount('');
       setDescription('');
       setTags('');
       setPaymentMethod('');
@@ -139,9 +164,36 @@ export function TransactionForm({
         </div>
       </div>
 
+      {type === 'income' && (
+        <div className="space-y-2">
+          <Label htmlFor="investmentAmount">Monto de inversión</Label>
+          <div className="relative">
+            <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              id="investmentAmount"
+              type="number"
+              placeholder="0.00"
+              value={investmentAmount}
+              onChange={(e) => setInvestmentAmount(e.target.value)}
+              className={cn('pl-10 text-lg font-semibold', errors.investmentAmount && 'border-destructive')}
+              min="0"
+              step="0.01"
+            />
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Registra lo que se invirtió para lograr el ingreso.
+          </p>
+          {errors.investmentAmount && (
+            <p className="text-sm text-destructive">{errors.investmentAmount}</p>
+          )}
+        </div>
+      )}
+
       {/* Amount */}
       <div className="space-y-2">
-        <Label htmlFor="amount">Monto *</Label>
+        <Label htmlFor="amount">
+          {type === 'income' ? 'Monto del ingreso *' : 'Monto *'}
+        </Label>
         <div className="relative">
           <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input

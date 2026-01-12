@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Transaction, Category } from '@/types';
-import { format, parseISO, startOfWeek, endOfWeek, subWeeks, eachWeekOfInterval, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
+import { format, parseISO, endOfWeek, subWeeks, eachWeekOfInterval, subMonths, startOfMonth, endOfMonth, eachMonthOfInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { cn } from '@/lib/utils';
-import { formatCurrency } from '@/utils/calculations';
+import { formatCurrency, getInvestmentAmount, getTransactionInflow, getTransactionOutflow } from '@/utils/calculations';
 
 const CHART_COLORS = {
   income: 'hsl(142, 71%, 45%)',
@@ -41,16 +41,7 @@ export function BalanceLineChart({ transactions, initialFund, weeks = 12, classN
       });
 
       runningBalance = weekTransactions.reduce((balance, t) => {
-        switch (t.type) {
-          case 'income':
-          case 'donation':
-            return balance + t.amount;
-          case 'investment':
-          case 'expense':
-            return balance - t.amount;
-          default:
-            return balance;
-        }
+        return balance + getTransactionInflow(t) - getTransactionOutflow(t);
       }, initialFund);
 
       return {
@@ -127,13 +118,13 @@ export function IncomeVsExpensesChart({ transactions, months = 6, className }: I
         return date >= monthStart && date <= monthEnd;
       });
 
-      const income = monthTransactions
-        .filter((t) => t.type === 'income' || t.type === 'donation')
-        .reduce((sum, t) => sum + t.amount, 0);
+      const income = monthTransactions.reduce((sum, t) => sum + getTransactionInflow(t), 0);
 
-      const expenses = monthTransactions
-        .filter((t) => t.type === 'expense' || t.type === 'investment')
-        .reduce((sum, t) => sum + t.amount, 0);
+      const expenses = monthTransactions.reduce((sum, t) => {
+        const investmentOutflow = getInvestmentAmount(t);
+        const expenseOutflow = t.type === 'expense' ? t.amount : 0;
+        return sum + investmentOutflow + expenseOutflow;
+      }, 0);
 
       return {
         name: format(month, 'MMM', { locale: es }),

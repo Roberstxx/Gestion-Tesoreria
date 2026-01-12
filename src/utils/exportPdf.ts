@@ -180,17 +180,19 @@ export function generatePdfReport(data: ReportData): void {
       typeLabels[t.type] || t.type,
       getCategoryName(t.categoryId),
       t.description.substring(0, 30) + (t.description.length > 30 ? '...' : ''),
+      t.type === 'income' && t.investmentAmount ? formatCurrency(t.investmentAmount) : '-',
       formatCurrency(t.amount),
     ]);
   
   autoTable(doc, {
     startY: yPos,
-    head: [['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Monto']],
+    head: [['Fecha', 'Tipo', 'Categoría', 'Descripción', 'Inversión', 'Monto']],
     body: transactionData,
     theme: 'striped',
     headStyles: { fillColor: [37, 99, 235], textColor: 255 },
     columnStyles: {
       4: { halign: 'right' },
+      5: { halign: 'right' },
     },
     styles: { fontSize: 8 },
     margin: { left: 14, right: 14 },
@@ -252,12 +254,13 @@ export function generateCsvReport(data: ReportData): void {
   
   // Transactions detail
   csv += 'DETALLE DE MOVIMIENTOS\n';
-  csv += 'Fecha,Tipo,Categoría,Descripción,Monto,Método de Pago\n';
+  csv += 'Fecha,Tipo,Categoría,Descripción,Inversión,Monto,Método de Pago\n';
   transactions
     .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
     .forEach((t) => {
       const desc = t.description.replace(/,/g, ';').replace(/"/g, "'");
-      csv += `${t.date},${typeLabels[t.type]},${getCategoryName(t.categoryId)},"${desc}",${t.amount},${t.paymentMethod || ''}\n`;
+      const investmentAmount = t.type === 'income' && t.investmentAmount ? t.investmentAmount : '';
+      csv += `${t.date},${typeLabels[t.type]},${getCategoryName(t.categoryId)},"${desc}",${investmentAmount},${t.amount},${t.paymentMethod || ''}\n`;
     });
   
   // Download

@@ -114,10 +114,15 @@ function normalizeTransactions(
 
     const createdAt = transaction.createdAt || new Date().toISOString();
     const updatedAt = transaction.updatedAt || createdAt;
+    const investmentAmount =
+      transaction.type === 'income' && Number.isFinite(Number(transaction.investmentAmount))
+        ? Number(transaction.investmentAmount)
+        : undefined;
 
     normalized.push({
       ...transaction,
       amount,
+      investmentAmount: investmentAmount && investmentAmount > 0 ? investmentAmount : undefined,
       date: normalizedDate,
       categoryId,
       description: transaction.description?.trim() || '',
@@ -196,6 +201,10 @@ export function normalizeTransactionInput(
   const transaction: TransactionInput = {
     ...input,
     amount,
+    investmentAmount:
+      input.type === 'income' && Number.isFinite(Number(input.investmentAmount))
+        ? Math.max(Number(input.investmentAmount), 0) || undefined
+        : undefined,
     date: normalizedDate,
     categoryId,
     description: input.description?.trim() || '',

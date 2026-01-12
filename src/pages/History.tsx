@@ -42,17 +42,17 @@ export default function History() {
 
   const handleEdit = (transaction: Transaction) => setEditingTransaction(transaction);
 
-  const handleSaveEdit = (data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleSaveEdit = async (data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingTransaction) {
-      updateTransaction(editingTransaction.id, data);
+      await updateTransaction(editingTransaction.id, data);
       toast({ title: '✅ Actualizado', description: 'Movimiento actualizado correctamente.' });
       setEditingTransaction(null);
     }
   };
 
-  const handleConfirmDelete = () => {
+  const handleConfirmDelete = async () => {
     if (deletingTransaction) {
-      deleteTransaction(deletingTransaction.id);
+      await deleteTransaction(deletingTransaction.id);
       toast({ title: '🗑️ Eliminado', description: 'Movimiento eliminado.' });
       setDeletingTransaction(null);
     }

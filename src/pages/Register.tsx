@@ -13,8 +13,8 @@ export default function Register() {
 
   const initialType = (searchParams.get('type') as TransactionType) || undefined;
 
-  const handleSubmit = (data: Parameters<typeof addTransaction>[0]) => {
-    addTransaction(data);
+  const handleSubmit = async (data: Parameters<typeof addTransaction>[0]) => {
+    await addTransaction(data);
     toast({
       title: '✅ Movimiento registrado',
       description: 'El movimiento se guardó correctamente.',
@@ -22,8 +22,8 @@ export default function Register() {
     navigate('/');
   };
 
-  const handleSaveAndNew = (data: Parameters<typeof addTransaction>[0]) => {
-    addTransaction(data);
+  const handleSaveAndNew = async (data: Parameters<typeof addTransaction>[0]) => {
+    await addTransaction(data);
     toast({
       title: '✅ Guardado',
       description: 'Puedes registrar otro movimiento.',

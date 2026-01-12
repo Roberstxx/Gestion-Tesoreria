@@ -217,7 +217,11 @@ export function useTreasury() {
       }
       
       return true;
-    }).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }).sort((a, b) => {
+      const aTime = new Date(a.createdAt || a.date).getTime();
+      const bTime = new Date(b.createdAt || b.date).getTime();
+      return bTime - aTime;
+    });
   }, [transactions, getCategoryById]);
 
   return {

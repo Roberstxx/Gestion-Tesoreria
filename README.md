@@ -9,6 +9,7 @@ Aplicación de control de ingresos y gastos con panel de indicadores, gráficos 
 - Estadísticas mensuales y comparativos.
 - Exportación de reportes en PDF/CSV.
 - Capa de datos preparada para Firebase (Firestore) o almacenamiento local.
+- Login con Firebase Authentication (solo correo/contraseña).
 
 ## 🧱 Tecnologías
 
@@ -45,6 +46,14 @@ VITE_DATA_PROVIDER=local
 1. Crea un proyecto en Firebase y habilita **Firestore**.
 2. Copia las credenciales de tu app web y crea un `.env` siguiendo `.env.example` (incluye `measurementId` si usas Analytics).
 3. Cambia `VITE_DATA_PROVIDER=firebase`.
+
+## 🔐 Login con Firebase Authentication
+
+La app usa **solo inicio de sesión** (sin registro). El alta de usuarios se gestiona desde Firebase.
+
+1. Activa el proveedor **Email/Password** en Firebase Authentication.
+2. Crea los usuarios desde la consola de Firebase.
+3. Inicia sesión en `/login` con las credenciales configuradas.
 
 ### Estructura esperada en Firestore
 

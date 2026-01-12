@@ -6,6 +6,7 @@ import { Wallet, TrendingUp, Gift, Package, CreditCard, BarChart3 } from 'lucide
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { generateSeedData, hasSeedData } from '@/utils/seedData';
+import { isLocalProvider } from '@/data';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -23,11 +24,11 @@ export default function Dashboard() {
 
   // Initialize seed data if needed
   useEffect(() => {
-    if (!loading && !settings.hasCompletedOnboarding && !hasSeedData()) {
+    if (!loading && isLocalProvider && !settings.hasCompletedOnboarding && !hasSeedData()) {
       generateSeedData();
       window.location.reload();
     }
-  }, [loading, settings.hasCompletedOnboarding]);
+  }, [loading, settings.hasCompletedOnboarding, isLocalProvider]);
 
   if (loading) {
     return (

@@ -40,8 +40,9 @@ const requiredFirebaseKeys: Array<keyof typeof firebaseConfig> = [
   'appId',
 ];
 
-const missingFirebaseKeys = requiredFirebaseKeys.filter((key) => !firebaseConfig[key]);
-if (missingFirebaseKeys.length > 0) {
+export const missingFirebaseKeys = requiredFirebaseKeys.filter((key) => !firebaseConfig[key]);
+export const hasValidFirebaseConfig = missingFirebaseKeys.length === 0;
+if (!hasValidFirebaseConfig) {
   console.warn(
     `[firebase] Missing config values: ${missingFirebaseKeys.join(
       ', '

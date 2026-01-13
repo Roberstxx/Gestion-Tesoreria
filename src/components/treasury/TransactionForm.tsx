@@ -62,10 +62,24 @@ export function TransactionForm({
   const [pendingData, setPendingData] = useState<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
   const [pendingAction, setPendingAction] = useState<'save' | 'saveAndNew'>('save');
 
+  // Función mejorada para permitir solo números y un punto decimal
   const sanitizeNumericInput = (value: string) => {
-    const cleaned = value.replace(/[^0-9.]/g, '');
-    const [whole, ...rest] = cleaned.split('.');
-    return rest.length ? `${whole}.${rest.join('')}` : whole;
+    // Elimina cualquier carácter que no sea número o punto
+    let cleaned = value.replace(/[^0-9.]/g, '');
+    
+    // Evita múltiples puntos decimales
+    const parts = cleaned.split('.');
+    if (parts.length > 2) {
+      cleaned = parts[0] + '.' + parts.slice(1).join('');
+    }
+    return cleaned;
+  };
+
+  // Bloquea teclas no numéricas (e, +, -, etc) en el evento onKeyDown
+  const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (['e', 'E', '+', '-'].includes(e.key)) {
+      e.preventDefault();
+    }
   };
 
   // Filter categories by type
@@ -92,13 +106,13 @@ export function TransactionForm({
     const newErrors: Record<string, string> = {};
     const parsedAmount = Number(amount);
 
-    if (!amount || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+    if (!amount || isNaN(parsedAmount) || parsedAmount <= 0) {
       newErrors.amount = 'Ingresa un monto válido';
     }
 
     if (type === 'income' && investmentAmount) {
       const parsedInvestment = Number(investmentAmount);
-      if (!Number.isFinite(parsedInvestment) || parsedInvestment < 0) {
+      if (isNaN(parsedInvestment) || parsedInvestment < 0) {
         newErrors.investmentAmount = 'Ingresa un monto de inversión válido';
       }
     }
@@ -230,7 +244,7 @@ export function TransactionForm({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {/* Type selector */}
+
       <div className="space-y-2">
         <Label>Tipo de movimiento</Label>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -264,6 +278,7 @@ export function TransactionForm({
               type="number"
               placeholder="0.00"
               value={investmentAmount}
+              onKeyDown={handleNumericKeyDown}
               onChange={(e) => setInvestmentAmount(sanitizeNumericInput(e.target.value))}
               className={cn('pl-10 text-lg font-semibold', errors.investmentAmount && 'border-destructive')}
               min="0"
@@ -280,7 +295,6 @@ export function TransactionForm({
         </div>
       )}
 
-      {/* Amount */}
       <div className="space-y-2">
         <Label htmlFor="amount">
           {type === 'income' ? 'Monto del ingreso *' : 'Monto *'}
@@ -292,6 +306,7 @@ export function TransactionForm({
             type="number"
             placeholder="0.00"
             value={amount}
+            onKeyDown={handleNumericKeyDown}
             onChange={(e) => setAmount(sanitizeNumericInput(e.target.value))}
             className={cn('pl-10 text-lg font-semibold', errors.amount && 'border-destructive')}
             min="0"
@@ -302,7 +317,6 @@ export function TransactionForm({
         {errors.amount && <p className="text-sm text-destructive">{errors.amount}</p>}
       </div>
 
-      {/* Date */}
       <div className="space-y-2">
         <Label htmlFor="date">Fecha *</Label>
         <div className="relative">
@@ -318,7 +332,6 @@ export function TransactionForm({
         {errors.date && <p className="text-sm text-destructive">{errors.date}</p>}
       </div>
 
-      {/* Category */}
       <div className="space-y-2">
         <Label htmlFor="category">Categoría *</Label>
         <Select value={categoryId} onValueChange={setCategoryId}>
@@ -336,7 +349,6 @@ export function TransactionForm({
         {errors.categoryId && <p className="text-sm text-destructive">{errors.categoryId}</p>}
       </div>
 
-      {/* Description */}
       <div className="space-y-2">
         <Label htmlFor="description">Descripción</Label>
         <div className="relative">
@@ -351,7 +363,6 @@ export function TransactionForm({
         </div>
       </div>
 
-      {/* Optional: Tags */}
       <div className="space-y-2">
         <Label htmlFor="tags" className="text-muted-foreground">
           Etiquetas (opcional)
@@ -368,7 +379,6 @@ export function TransactionForm({
         </div>
       </div>
 
-      {/* Optional: Payment method */}
       <div className="space-y-2">
         <Label htmlFor="paymentMethod" className="text-muted-foreground">
           Método de pago (opcional)
@@ -385,7 +395,6 @@ export function TransactionForm({
         </div>
       </div>
 
-      {/* Actions */}
       <div className="flex flex-col sm:flex-row gap-2 pt-4">
         <Button onClick={() => handleSubmit(false)} className="flex-1">
           <Save className="h-4 w-4 mr-2" />

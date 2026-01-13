@@ -1,4 +1,3 @@
-// src/hooks/useTreasury.ts
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Transaction, Category, Period, AppSettings, TransactionType } from '@/types';
 import { calculateBalance, getMonthlyStats, getMonthlyComparisons, getWeeklyBreakdown } from '@/utils/calculations';
@@ -16,8 +15,11 @@ export function useTreasury() {
     theme: 'light',
   });
   const [loading, setLoading] = useState(true);
+
+  // Obtiene el repositorio de Firebase (configurado en src/data/index.ts)
   const repository = useMemo(() => getTreasuryRepository(), []);
 
+  // Función para actualizar el estado local con los datos de la nube
   const applySnapshot = useCallback((snapshot: {
     transactions: Transaction[];
     categories: Category[];
@@ -30,19 +32,19 @@ export function useTreasury() {
     setSettings(snapshot.settings);
   }, []);
 
+  // Asegura que existan categorías en Firebase para poder clasificar movimientos
   const ensureDefaultCategories = useCallback(async (snapshot: {
     transactions: Transaction[];
     categories: Category[];
     periods: Period[];
     settings: AppSettings;
   }) => {
-    // Si ya hay categorías en Firebase, no hacemos nada
     if (snapshot.categories.length > 0) {
       applySnapshot(snapshot);
       return snapshot;
     }
 
-    // Si está vacío, creamos las categorías por defecto directamente en Firebase
+    // Si Firebase no tiene categorías, las creamos directamente en la nube
     const defaults = getDefaultCategories();
     await Promise.all(
       defaults.map((category) =>
@@ -54,27 +56,28 @@ export function useTreasury() {
       )
     );
 
+    // Refrescamos para obtener los IDs generados por Firebase
     const refreshed = await repository.getSnapshot();
     applySnapshot(refreshed);
     return refreshed;
   }, [applySnapshot, repository]);
 
-  // Carga de datos inicial (Solo desde el Repositorio de Firebase)
+  // Carga inicial de datos desde Firebase
   useEffect(() => {
     let isMounted = true;
 
     const loadSnapshot = async () => {
       try {
         setLoading(true);
-        // Obtenemos los datos directamente de la DB
+        // Traer datos directamente de Firestore
         const snapshot = await repository.getSnapshot();
         
         if (!isMounted) return;
 
-        // Aseguramos que existan categorías iniciales en la DB si es una cuenta nueva
+        // Validar e inicializar categorías base en la DB si es necesario
         await ensureDefaultCategories(snapshot);
       } catch (error) {
-        console.error('Error al cargar datos de Firebase:', error);
+        console.error('Error cargando datos de Firebase:', error);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -89,10 +92,11 @@ export function useTreasury() {
     };
   }, [ensureDefaultCategories, repository]);
 
-  // --- Operaciones de datos (Todas llaman al repositorio y refrescan el estado) ---
+  // --- Operaciones de Transacciones ---
 
   const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newTransaction = await repository.addTransaction(transaction);
+    // Sincronizar inmediatamente después de guardar
     const snapshot = await repository.getSnapshot();
     applySnapshot(snapshot);
     return newTransaction;
@@ -109,6 +113,8 @@ export function useTreasury() {
     const snapshot = await repository.getSnapshot();
     applySnapshot(snapshot);
   }, [applySnapshot, repository]);
+
+  // --- Operaciones de Categorías ---
 
   const addCategory = useCallback(async (category: Omit<Category, 'id'>) => {
     const newCategory = await repository.addCategory(category);
@@ -128,6 +134,16 @@ export function useTreasury() {
     const snapshot = await repository.getSnapshot();
     setCategories(snapshot.categories);
   }, [repository]);
+
+  const getCategoriesByType = useCallback((type: TransactionType) => {
+    return categories.filter((c) => c.type === type);
+  }, [categories]);
+
+  const getCategoryById = useCallback((id: string) => {
+    return categories.find((c) => c.id === id);
+  }, [categories]);
+
+  // --- Operaciones de Periodos y Ajustes ---
 
   const addPeriod = useCallback(async (period: Omit<Period, 'id' | 'createdAt'>) => {
     const newPeriod = await repository.addPeriod(period);
@@ -161,7 +177,8 @@ export function useTreasury() {
     await ensureDefaultCategories(snapshot);
   }, [ensureDefaultCategories, repository]);
 
-  // Lógica de filtrado y cálculos (se mantiene igual ya que usa el estado actual)
+  // --- Lógica de cálculos y filtrado ---
+
   const currentPeriod = useMemo(() => {
     if (!settings.currentPeriodId) return null;
     return periods.find((p) => p.id === settings.currentPeriodId) || null;
@@ -181,28 +198,51 @@ export function useTreasury() {
   }) => {
     return transactions.filter((t) => {
       const date = parseISO(t.date);
+      
       if (filters.startDate && date < filters.startDate) return false;
       if (filters.endDate && date > filters.endDate) return false;
       if (filters.type && t.type !== filters.type) return false;
       if (filters.categoryId && t.categoryId !== filters.categoryId) return false;
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
-        const category = categories.find(c => c.id === t.categoryId);
-        if (!t.description.toLowerCase().includes(searchLower) && 
-            !(category?.name.toLowerCase().includes(searchLower))) return false;
+        const category = getCategoryById(t.categoryId);
+        if (
+          !t.description.toLowerCase().includes(searchLower) &&
+          !(category?.name.toLowerCase().includes(searchLower))
+        ) {
+          return false;
+        }
       }
       return true;
-    }).sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime());
-  }, [transactions, categories]);
+    }).sort((a, b) => {
+      const aTime = new Date(a.createdAt || a.date).getTime();
+      const bTime = new Date(b.createdAt || b.date).getTime();
+      return bTime - aTime;
+    });
+  }, [transactions, getCategoryById]);
 
   return {
-    transactions, categories, periods, settings, currentPeriod, currentBalance, loading,
-    addTransaction, updateTransaction, deleteTransaction,
-    addCategory, updateCategory, deleteCategory,
-    addPeriod, updatePeriod, updateSettings, completeOnboarding, resetAllData,
+    transactions,
+    categories,
+    periods,
+    settings,
+    currentPeriod,
+    currentBalance,
+    loading,
+    addTransaction,
+    updateTransaction,
+    deleteTransaction,
+    addCategory,
+    updateCategory,
+    deleteCategory,
+    getCategoriesByType,
+    getCategoryById,
+    addPeriod,
+    updatePeriod,
+    updateSettings,
+    completeOnboarding,
+    resetAllData,
     filterTransactions,
-    getCategoryById: (id: string) => categories.find(c => c.id === id),
-    getCategoriesByType: (type: TransactionType) => categories.filter(c => c.type === type),
     getStatsForMonth: (month: Date) => currentPeriod ? getMonthlyStats(transactions, month, currentPeriod.initialFund, transactions) : null,
     getWeeklyBreakdownForMonth: (month: Date) => getWeeklyBreakdown(transactions, month),
     monthlyComparisons: currentPeriod ? getMonthlyComparisons(transactions, new Date(), currentPeriod.initialFund) : null,

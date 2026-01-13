@@ -9,6 +9,8 @@ export interface TreasurySnapshot {
 
 export interface TreasuryRepository {
   getSnapshot: () => Promise<TreasurySnapshot>;
+  seedSnapshot: (snapshot: TreasurySnapshot) => Promise<void>;
+  resetAll: () => Promise<void>;
   addTransaction: (data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Transaction>;
   updateTransaction: (id: string, updates: Partial<Transaction>) => Promise<void>;
   deleteTransaction: (id: string) => Promise<void>;

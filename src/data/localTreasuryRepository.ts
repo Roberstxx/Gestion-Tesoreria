@@ -28,6 +28,12 @@ export function createLocalTreasuryRepository(): TreasuryRepository {
 
       return normalized.snapshot;
     },
+    async seedSnapshot(snapshot) {
+      persistSnapshot(snapshot);
+    },
+    async resetAll() {
+      storage.clearStoredData();
+    },
     async addTransaction(data) {
       const categories = storage.getCategories();
       const normalized = normalizeTransactionInput(data, categories);

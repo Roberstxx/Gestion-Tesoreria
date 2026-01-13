@@ -2,8 +2,8 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Transaction, Category, Period, AppSettings, TransactionType } from '@/types';
 import { calculateBalance, getMonthlyStats, getMonthlyComparisons, getWeeklyBreakdown } from '@/utils/calculations';
 import { parseISO } from 'date-fns';
-import { getTreasuryRepository } from '@/data';
-import { getDefaultCategories } from '@/utils/storage';
+import { getTreasuryRepository, isFirebaseProvider } from '@/data';
+import { DEFAULT_SETTINGS, clearStoredData, getDefaultCategories, getStoredSnapshot } from '@/utils/storage';
 
 export function useTreasury() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -29,6 +29,45 @@ export function useTreasury() {
     setSettings(snapshot.settings);
   }, []);
 
+  const hasLocalData = useCallback(() => {
+    const snapshot = getStoredSnapshot();
+    return (
+      snapshot.transactions.length > 0 ||
+      snapshot.categories.length > 0 ||
+      snapshot.periods.length > 0 ||
+      snapshot.settings.currentPeriodId !== DEFAULT_SETTINGS.currentPeriodId ||
+      snapshot.settings.hasCompletedOnboarding !== DEFAULT_SETTINGS.hasCompletedOnboarding ||
+      snapshot.settings.theme !== DEFAULT_SETTINGS.theme
+    );
+  }, []);
+
+  const ensureDefaultCategories = useCallback(async (snapshot: {
+    transactions: Transaction[];
+    categories: Category[];
+    periods: Period[];
+    settings: AppSettings;
+  }) => {
+    if (snapshot.categories.length > 0) {
+      applySnapshot(snapshot);
+      return snapshot;
+    }
+
+    const defaults = getDefaultCategories();
+    await Promise.all(
+      defaults.map((category) =>
+        repository.addCategory({
+          name: category.name,
+          type: category.type,
+          isDefault: category.isDefault,
+        })
+      )
+    );
+
+    const refreshed = await repository.getSnapshot();
+    applySnapshot(refreshed);
+    return refreshed;
+  }, [applySnapshot, repository]);
+
   // Load data from repository
   useEffect(() => {
     let isMounted = true;
@@ -38,23 +77,25 @@ export function useTreasury() {
         let snapshot = await repository.getSnapshot();
         if (!isMounted) return;
 
-        if (snapshot.categories.length === 0) {
-          const defaults = getDefaultCategories();
-          await Promise.all(
-            defaults.map((category) =>
-              repository.addCategory({
-                name: category.name,
-                type: category.type,
-                isDefault: category.isDefault,
-              })
-            )
-          );
-          snapshot = await repository.getSnapshot();
+        if (isFirebaseProvider) {
+          const isFirebaseEmpty =
+            snapshot.transactions.length === 0 &&
+            snapshot.categories.length === 0 &&
+            snapshot.periods.length === 0 &&
+            snapshot.settings.currentPeriodId === DEFAULT_SETTINGS.currentPeriodId &&
+            snapshot.settings.hasCompletedOnboarding === DEFAULT_SETTINGS.hasCompletedOnboarding &&
+            snapshot.settings.theme === DEFAULT_SETTINGS.theme;
+
+          if (isFirebaseEmpty && hasLocalData()) {
+            await repository.seedSnapshot(getStoredSnapshot());
+            clearStoredData();
+            snapshot = await repository.getSnapshot();
+          }
         }
 
         if (!isMounted) return;
 
-        applySnapshot(snapshot);
+        await ensureDefaultCategories(snapshot);
       } catch (error) {
         console.error('Error loading treasury snapshot:', error);
       } finally {
@@ -69,7 +110,7 @@ export function useTreasury() {
     return () => {
       isMounted = false;
     };
-  }, [repository]);
+  }, [ensureDefaultCategories, hasLocalData, repository]);
 
   // Current period
   const currentPeriod = useMemo(() => {
@@ -167,28 +208,18 @@ export function useTreasury() {
     setSettings(nextSettings);
   }, [repository]);
 
+  const resetAllData = useCallback(async () => {
+    await repository.resetAll();
+    const snapshot = await repository.getSnapshot();
+    await ensureDefaultCategories(snapshot);
+  }, [ensureDefaultCategories, repository]);
+
   // Initialize default categories
   const initializeCategories = useCallback(async () => {
     const snapshot = await repository.getSnapshot();
-    if (snapshot.categories.length > 0) {
-      setCategories(snapshot.categories);
-      return;
-    }
-
-    const defaults = getDefaultCategories();
-    await Promise.all(
-      defaults.map((category) =>
-        repository.addCategory({
-          name: category.name,
-          type: category.type,
-          isDefault: category.isDefault,
-        })
-      )
-    );
-
-    const refreshed = await repository.getSnapshot();
+    const refreshed = await ensureDefaultCategories(snapshot);
     setCategories(refreshed.categories);
-  }, [repository]);
+  }, [ensureDefaultCategories, repository]);
 
   // Get stats for a specific month
   const getStatsForMonth = useCallback((month: Date) => {
@@ -272,6 +303,7 @@ export function useTreasury() {
     updateSettings,
     completeOnboarding,
     initializeCategories,
+    resetAllData,
 
     // Stats & filtering
     getStatsForMonth,

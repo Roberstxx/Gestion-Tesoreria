@@ -7,6 +7,12 @@ const STORAGE_KEYS = {
   SETTINGS: 'treasury_settings',
 } as const;
 
+export const DEFAULT_SETTINGS: AppSettings = {
+  currentPeriodId: null,
+  hasCompletedOnboarding: false,
+  theme: 'light',
+};
+
 // Generic storage helpers
 function getItem<T>(key: string, defaultValue: T): T {
   try {
@@ -121,11 +127,7 @@ export function getCurrentPeriod(): Period | null {
 
 // Settings
 export function getSettings(): AppSettings {
-  return getItem<AppSettings>(STORAGE_KEYS.SETTINGS, {
-    currentPeriodId: null,
-    hasCompletedOnboarding: false,
-    theme: 'light',
-  });
+  return getItem<AppSettings>(STORAGE_KEYS.SETTINGS, DEFAULT_SETTINGS);
 }
 
 export function saveSettings(settings: AppSettings): void {
@@ -135,6 +137,21 @@ export function saveSettings(settings: AppSettings): void {
 export function updateSettings(updates: Partial<AppSettings>): void {
   const settings = getSettings();
   saveSettings({ ...settings, ...updates });
+}
+
+export function getStoredSnapshot() {
+  return {
+    transactions: getTransactions(),
+    categories: getCategories(),
+    periods: getPeriods(),
+    settings: getSettings(),
+  };
+}
+
+export function clearStoredData(): void {
+  Object.values(STORAGE_KEYS).forEach((key) => {
+    localStorage.removeItem(key);
+  });
 }
 
 // Default categories

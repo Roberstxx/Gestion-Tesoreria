@@ -84,6 +84,36 @@ export function createFirebaseTreasuryRepository(): TreasuryRepository {
 
       return normalized.snapshot;
     },
+    async seedSnapshot(snapshot) {
+      await Promise.all([
+        saveSettings(snapshot.settings),
+        ...snapshot.categories.map((category) =>
+          setDoc(doc(firestore, COLLECTIONS.categories, category.id), category)
+        ),
+        ...snapshot.periods.map((period) =>
+          setDoc(doc(firestore, COLLECTIONS.periods, period.id), period)
+        ),
+        ...snapshot.transactions.map((transaction) =>
+          setDoc(doc(firestore, COLLECTIONS.transactions, transaction.id), transaction)
+        ),
+      ]);
+    },
+    async resetAll() {
+      const collectionNames = [
+        COLLECTIONS.transactions,
+        COLLECTIONS.categories,
+        COLLECTIONS.periods,
+      ];
+
+      await Promise.all(
+        collectionNames.map(async (name) => {
+          const snapshot = await getDocs(collection(firestore, name));
+          await Promise.all(snapshot.docs.map((docSnap) => deleteDoc(docSnap.ref)));
+        })
+      );
+
+      await deleteDoc(doc(firestore, COLLECTIONS.settings, SETTINGS_DOC_ID));
+    },
     async addTransaction(data) {
       const categories = await fetchCollection<Category>(COLLECTIONS.categories);
       const normalized = normalizeTransactionInput(data, categories);

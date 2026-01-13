@@ -21,6 +21,48 @@ const COLLECTIONS = {
 
 const SETTINGS_DOC_ID = 'app';
 
+type FirestoreValue =
+  | string
+  | number
+  | boolean
+  | null
+  | FirestoreValue[]
+  | { [key: string]: FirestoreValue };
+
+function sanitizeFirestoreData<T extends Record<string, unknown>>(data: T): FirestoreValue {
+  if (Array.isArray(data)) {
+    return data
+      .filter((item) => item !== undefined)
+      .map((item) =>
+        typeof item === 'object' && item !== null
+          ? sanitizeFirestoreData(item as Record<string, unknown>)
+          : (item as FirestoreValue)
+      );
+  }
+
+  return Object.entries(data).reduce<Record<string, FirestoreValue>>((acc, [key, value]) => {
+    if (value === undefined) {
+      return acc;
+    }
+    if (Array.isArray(value)) {
+      acc[key] = value
+        .filter((item) => item !== undefined)
+        .map((item) =>
+          typeof item === 'object' && item !== null
+            ? sanitizeFirestoreData(item as Record<string, unknown>)
+            : (item as FirestoreValue)
+        );
+      return acc;
+    }
+    if (typeof value === 'object' && value !== null) {
+      acc[key] = sanitizeFirestoreData(value as Record<string, unknown>);
+      return acc;
+    }
+    acc[key] = value as FirestoreValue;
+    return acc;
+  }, {});
+}
+
 function withDocId<T extends { id: string }>(
   data: Omit<T, 'id'>,
   id: string
@@ -79,6 +121,13 @@ export function createFirebaseTreasuryRepository(): TreasuryRepository {
           ...normalized.snapshot.periods.map((period) =>
             setDoc(doc(firestore, COLLECTIONS.periods, period.id), period, { merge: true })
           ),
+          ...normalized.snapshot.transactions.map((transaction) =>
+            setDoc(
+              doc(firestore, COLLECTIONS.transactions, transaction.id),
+              sanitizeFirestoreData(transaction),
+              { merge: true }
+            )
+          ),
         ]);
       }
 
@@ -94,7 +143,10 @@ export function createFirebaseTreasuryRepository(): TreasuryRepository {
           setDoc(doc(firestore, COLLECTIONS.periods, period.id), period)
         ),
         ...snapshot.transactions.map((transaction) =>
-          setDoc(doc(firestore, COLLECTIONS.transactions, transaction.id), transaction)
+          setDoc(
+            doc(firestore, COLLECTIONS.transactions, transaction.id),
+            sanitizeFirestoreData(transaction)
+          )
         ),
       ]);
     },
@@ -142,12 +194,16 @@ export function createFirebaseTreasuryRepository(): TreasuryRepository {
       };
       const docRef = doc(collection(firestore, COLLECTIONS.transactions));
       const payload = { ...transaction, id: docRef.id };
-      await setDoc(docRef, payload);
+      await setDoc(docRef, sanitizeFirestoreData(payload));
       return { ...payload };
     },
     async updateTransaction(id, updates) {
       const docRef = doc(firestore, COLLECTIONS.transactions, id);
-      await updateDoc(docRef, { ...updates, updatedAt: new Date().toISOString() });
+      const payload = sanitizeFirestoreData({
+        ...updates,
+        updatedAt: new Date().toISOString(),
+      });
+      await updateDoc(docRef, payload);
     },
     async deleteTransaction(id) {
       const docRef = doc(firestore, COLLECTIONS.transactions, id);

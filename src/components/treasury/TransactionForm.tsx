@@ -6,6 +6,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -14,6 +24,7 @@ import {
 } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { Calendar, DollarSign, Tag, FileText, CreditCard, Save, Plus } from 'lucide-react';
+import { formatCurrency } from '@/utils/calculations';
 
 interface TransactionFormProps {
   categories: Category[];
@@ -47,6 +58,9 @@ export function TransactionForm({
   const [tags, setTags] = useState(initialData?.tags?.join(', ') || '');
   const [paymentMethod, setPaymentMethod] = useState(initialData?.paymentMethod || '');
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pendingData, setPendingData] = useState<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
+  const [pendingAction, setPendingAction] = useState<'save' | 'saveAndNew'>('save');
 
   // Filter categories by type
   const filteredCategories = categories.filter((c) => c.type === type);
@@ -94,10 +108,10 @@ export function TransactionForm({
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (saveAndNew: boolean = false) => {
-    if (!validate()) return;
+  const buildSubmissionData = (): Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> | null => {
+    if (!validate()) return null;
 
-    const data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> = {
+    return {
       type,
       amount: parseFloat(amount),
       investmentAmount:
@@ -110,7 +124,12 @@ export function TransactionForm({
       tags: tags ? tags.split(',').map((t) => t.trim()).filter(Boolean) : undefined,
       paymentMethod: paymentMethod || undefined,
     };
+  };
 
+  const submitWithData = (
+    data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>,
+    saveAndNew: boolean
+  ) => {
     if (saveAndNew && onSaveAndNew) {
       onSaveAndNew(data);
       // Reset form
@@ -122,6 +141,21 @@ export function TransactionForm({
     } else {
       onSubmit(data);
     }
+  };
+
+  const handleSubmit = (saveAndNew: boolean = false) => {
+    const data = buildSubmissionData();
+    if (!data) return;
+
+    const needsConfirmation = ['income', 'donation', 'expense'].includes(type);
+    if (needsConfirmation) {
+      setPendingData(data);
+      setPendingAction(saveAndNew ? 'saveAndNew' : 'save');
+      setConfirmOpen(true);
+      return;
+    }
+
+    submitWithData(data, saveAndNew);
   };
 
   const typeButtons: { value: TransactionType; label: string; emoji: string }[] = [
@@ -141,8 +175,57 @@ export function TransactionForm({
     expense: 'border-expense bg-expense/10 text-expense',
   };
 
+  const typeLabels: Record<TransactionType, string> = {
+    income: 'Ingreso',
+    donation: 'Donación',
+    investment: 'Inversión',
+    expense: 'Gasto',
+  };
+
   return (
     <div className="space-y-6">
+      <AlertDialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          setConfirmOpen(open);
+          if (!open) {
+            setPendingData(null);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Es correcta esta cantidad?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Vas a registrar un movimiento de tipo {typeLabels[type]} por{' '}
+              <span className="font-semibold text-foreground">
+                {pendingData ? formatCurrency(pendingData.amount) : formatCurrency(Number(amount || 0))}
+              </span>
+              . Verifica que el monto sea correcto antes de guardar.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onClick={() => {
+                setPendingData(null);
+                setConfirmOpen(false);
+              }}
+            >
+              Revisar
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (!pendingData) return;
+                submitWithData(pendingData, pendingAction === 'saveAndNew');
+                setPendingData(null);
+                setConfirmOpen(false);
+              }}
+            >
+              Sí, registrar
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {/* Type selector */}
       <div className="space-y-2">
         <Label>Tipo de movimiento</Label>

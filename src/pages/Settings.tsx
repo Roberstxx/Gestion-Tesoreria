@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/treasury';
 import { useTreasury } from '@/hooks/useTreasury';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -22,6 +23,7 @@ export default function Settings() {
     updateCategory, 
     deleteCategory,
     getCategoriesByType,
+    updatePeriod,
   } = useTreasury();
   const { toast } = useToast();
   
@@ -29,8 +31,20 @@ export default function Settings() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategoryType, setNewCategoryType] = useState<TransactionType>('income');
+  const [initialFundInput, setInitialFundInput] = useState('');
+  const [initialFundError, setInitialFundError] = useState('');
+  const [resetPhraseInput, setResetPhraseInput] = useState('');
+  const [resetDialogOpen, setResetDialogOpen] = useState(false);
   
   const typeOptions: TransactionType[] = ['income', 'donation', 'investment', 'expense'];
+  const resetPhrase =
+    'Cada peso cuenta: registrar el dinero con honestidad evita pérdidas, ayuda a planear y nos recuerda que la confianza se construye con cifras claras y decisiones responsables.';
+
+  useEffect(() => {
+    if (currentPeriod) {
+      setInitialFundInput(currentPeriod.initialFund.toString());
+    }
+  }, [currentPeriod]);
   
   const handleAddCategory = () => {
     if (!newCategoryName.trim()) {
@@ -84,6 +98,24 @@ export default function Settings() {
   const handleClearData = () => {
     localStorage.clear();
     window.location.reload();
+  };
+
+  const handleUpdateInitialFund = async () => {
+    if (!currentPeriod) return;
+    const trimmed = initialFundInput.trim();
+    const parsed = trimmed === '' ? NaN : Number(trimmed);
+
+    if (!Number.isFinite(parsed) || parsed < 0) {
+      setInitialFundError('Ingresa un monto válido (0 o mayor).');
+      return;
+    }
+
+    setInitialFundError('');
+    await updatePeriod(currentPeriod.id, { initialFund: parsed });
+    toast({
+      title: '✅ Fondo inicial actualizado',
+      description: 'El fondo inicial del periodo actual se guardó correctamente.',
+    });
   };
 
   const CategoryList = ({ type }: { type: TransactionType }) => {
@@ -179,6 +211,29 @@ export default function Settings() {
                   <p className="text-caption text-muted-foreground">Fin</p>
                   <p className="font-medium">{new Date(currentPeriod.endDate).toLocaleDateString('es-MX')}</p>
                 </div>
+              </div>
+              <div className="mt-6 space-y-3">
+                <Label htmlFor="initial-fund">Modificar fondo inicial</Label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <Input
+                    id="initial-fund"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={initialFundInput}
+                    onChange={(e) => setInitialFundInput(e.target.value)}
+                    className={initialFundError ? 'border-destructive' : undefined}
+                  />
+                  <Button onClick={handleUpdateInitialFund} className="sm:w-auto">
+                    Guardar
+                  </Button>
+                </div>
+                {initialFundError && (
+                  <p className="text-sm text-destructive">{initialFundError}</p>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Puedes dejarlo en 0 si el fondo inicial se definirá con la primera inversión.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -315,7 +370,15 @@ export default function Settings() {
           </CardHeader>
           <CardContent>
             <div className="flex flex-col sm:flex-row gap-4">
-              <AlertDialog>
+              <AlertDialog
+                open={resetDialogOpen}
+                onOpenChange={(open) => {
+                  setResetDialogOpen(open);
+                  if (!open) {
+                    setResetPhraseInput('');
+                  }
+                }}
+              >
                 <AlertDialogTrigger asChild>
                   <Button variant="outline" className="text-destructive border-destructive/30">
                     <RefreshCw className="h-4 w-4 mr-2" />
@@ -329,11 +392,34 @@ export default function Settings() {
                       Esta acción eliminará TODOS los datos: movimientos, categorías, periodos y configuraciones. La app volverá a su estado inicial con datos de ejemplo. Esta acción no se puede deshacer.
                     </AlertDialogDescription>
                   </AlertDialogHeader>
+                  <div className="space-y-2">
+                    <Label htmlFor="reset-phrase">Escribe la siguiente frase para continuar</Label>
+                    <p className="text-xs text-muted-foreground">{resetPhrase}</p>
+                    <Textarea
+                      id="reset-phrase"
+                      value={resetPhraseInput}
+                      onChange={(e) => setResetPhraseInput(e.target.value)}
+                      placeholder="Escribe la frase completa, incluyendo signos y acentos."
+                      className="min-h-[110px]"
+                    />
+                  </div>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                    <AlertDialogCancel
+                      onClick={() => {
+                        setResetPhraseInput('');
+                        setResetDialogOpen(false);
+                      }}
+                    >
+                      Cancelar
+                    </AlertDialogCancel>
                     <AlertDialogAction
                       className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                      onClick={handleClearData}
+                      disabled={resetPhraseInput.trim() !== resetPhrase}
+                      onClick={() => {
+                        setResetPhraseInput('');
+                        setResetDialogOpen(false);
+                        handleClearData();
+                      }}
                     >
                       Sí, reiniciar todo
                     </AlertDialogAction>

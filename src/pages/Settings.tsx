@@ -24,6 +24,7 @@ export default function Settings() {
     deleteCategory,
     getCategoriesByType,
     updatePeriod,
+    resetAllData,
   } = useTreasury();
   const { toast } = useToast();
   
@@ -95,8 +96,8 @@ export default function Settings() {
     setNewCategoryName(category.name);
   };
   
-  const handleClearData = () => {
-    localStorage.clear();
+  const handleClearData = async () => {
+    await resetAllData();
     window.location.reload();
   };
 
@@ -435,7 +436,7 @@ export default function Settings() {
           <CardContent className="pt-4">
             <div className="text-center text-sm text-muted-foreground">
               <p>Tesorería App v1.0</p>
-              <p className="text-xs mt-1">Datos almacenados localmente en este dispositivo</p>
+              <p className="text-xs mt-1">Datos almacenados en Firebase</p>
             </div>
           </CardContent>
         </Card>

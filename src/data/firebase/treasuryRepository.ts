@@ -137,6 +137,13 @@ export function createFirebaseTreasuryRepository(userId: string): TreasuryReposi
               { merge: true }
             )
           ),
+          ...normalized.snapshot.transactions.map((transaction) =>
+            setDoc(
+              doc(firestore, COLLECTIONS.transactions, transaction.id),
+              sanitizeFirestoreData(transaction),
+              { merge: true }
+            )
+          ),
         ]);
       }
 

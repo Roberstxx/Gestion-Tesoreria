@@ -30,7 +30,7 @@ export function TransactionItem({
   onClick,
   showActions = true,
 }: TransactionItemProps) {
-  const isOutflow = transaction.type === 'expense' || transaction.type === 'investment';
+  const isOutflow = transaction.type === 'expense';
   const investmentAmount =
     transaction.type === 'income' ? transaction.investmentAmount : undefined;
 

@@ -8,17 +8,26 @@ export const dataProvider = 'firebase';
 export const isFirebaseProvider = true;
 export const isLocalProvider = false;
 
-let repository: TreasuryRepository | null = null;
+const repositories = new Map<string, TreasuryRepository>();
 
-export function getTreasuryRepository(): TreasuryRepository {
-  if (!repository) {
-    // Si falta configuración, lanzamos un error claro
-    if (!hasValidFirebaseConfig) {
-      throw new Error(
-        `Error: Configuración de Firebase incompleta. Faltan: ${missingFirebaseKeys.join(', ')}`
-      );
-    }
-    repository = createFirebaseTreasuryRepository();
+export function getTreasuryRepository(userId: string): TreasuryRepository {
+  if (!userId) {
+    throw new Error('Error: No se encontró un usuario autenticado.');
   }
+
+  const existing = repositories.get(userId);
+  if (existing) {
+    return existing;
+  }
+
+  // Si falta configuración, lanzamos un error claro
+  if (!hasValidFirebaseConfig) {
+    throw new Error(
+      `Error: Configuración de Firebase incompleta. Faltan: ${missingFirebaseKeys.join(', ')}`
+    );
+  }
+
+  const repository = createFirebaseTreasuryRepository(userId);
+  repositories.set(userId, repository);
   return repository;
 }

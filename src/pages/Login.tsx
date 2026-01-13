@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { FirebaseError } from 'firebase/app';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -17,6 +18,27 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const getLoginErrorMessage = (err: unknown) => {
+    if (err instanceof FirebaseError) {
+      switch (err.code) {
+        case 'auth/invalid-email':
+          return 'El correo no es válido. Revisa el formato.';
+        case 'auth/user-disabled':
+          return 'La cuenta está deshabilitada. Contacta al administrador.';
+        case 'auth/user-not-found':
+          return 'No existe una cuenta con ese correo.';
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+          return 'La contraseña es incorrecta. Intenta de nuevo.';
+        case 'auth/too-many-requests':
+          return 'Demasiados intentos. Espera un momento y vuelve a intentar.';
+        default:
+          return 'No se pudo iniciar sesión. Verifica tus datos e inténtalo de nuevo.';
+      }
+    }
+    return 'No se pudo iniciar sesión. Verifica tus datos e inténtalo de nuevo.';
+  };
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -36,11 +58,11 @@ export default function Login() {
       });
       navigate('/');
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'No se pudo iniciar sesión.';
+      const message = getLoginErrorMessage(err);
       setError(message);
       toast({
         title: '⚠️ Error de inicio de sesión',
-        description: 'Verifica tu correo y contraseña e intenta de nuevo.',
+        description: message,
         variant: 'destructive',
       });
     } finally {

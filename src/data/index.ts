@@ -5,10 +5,10 @@ import { hasValidFirebaseConfig, missingFirebaseKeys } from './firebase/firebase
 
 export type DataProvider = 'local' | 'firebase';
 
-export const dataProvider = (import.meta.env.VITE_DATA_PROVIDER ?? 'firebase') as DataProvider;
+export const dataProvider = 'firebase';
 
-export const isFirebaseProvider = dataProvider === 'firebase';
-export const isLocalProvider = dataProvider === 'local';
+export const isFirebaseProvider = true;
+export const isLocalProvider = false;
 
 let repository: TreasuryRepository | null = null;
 
@@ -21,9 +21,7 @@ export function getTreasuryRepository(): TreasuryRepository {
         )}. Revisa las variables VITE_FIREBASE_* en tu entorno.`
       );
     }
-    repository = isFirebaseProvider
-      ? createFirebaseTreasuryRepository()
-      : createLocalTreasuryRepository();
+    repository = createFirebaseTreasuryRepository();
   }
   return repository;
 }

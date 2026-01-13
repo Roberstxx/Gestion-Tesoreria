@@ -79,6 +79,13 @@ export function createFirebaseTreasuryRepository(): TreasuryRepository {
           ...normalized.snapshot.periods.map((period) =>
             setDoc(doc(firestore, COLLECTIONS.periods, period.id), period, { merge: true })
           ),
+          ...normalized.snapshot.transactions.map((transaction) =>
+            setDoc(
+              doc(firestore, COLLECTIONS.transactions, transaction.id),
+              transaction,
+              { merge: true }
+            )
+          ),
         ]);
       }
 

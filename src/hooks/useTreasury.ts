@@ -4,8 +4,10 @@ import { calculateBalance, getMonthlyStats, getMonthlyComparisons, getWeeklyBrea
 import { parseISO } from 'date-fns';
 import { getTreasuryRepository } from '@/data';
 import { getDefaultCategories } from '@/utils/storage';
+import { useAuth } from '@/context/AuthContext';
 
 export function useTreasury() {
+  const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [periods, setPeriods] = useState<Period[]>([]);
@@ -17,7 +19,12 @@ export function useTreasury() {
   const [loading, setLoading] = useState(true);
 
   // Obtiene el repositorio de Firebase (configurado en src/data/index.ts)
-  const repository = useMemo(() => getTreasuryRepository(), []);
+  const repository = useMemo(() => {
+    if (!user?.uid) {
+      throw new Error('No hay un usuario autenticado para cargar datos.');
+    }
+    return getTreasuryRepository(user.uid);
+  }, [user?.uid]);
 
   // Función para actualizar el estado local con los datos de la nube
   const applySnapshot = useCallback((snapshot: {

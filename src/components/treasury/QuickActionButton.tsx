@@ -12,7 +12,7 @@ interface QuickActionButtonProps {
 const typeIcons: Record<TransactionType, string> = {
   income: '💰',
   donation: '🎁',
-  investment: '📦',
+  investment: '🤝',
   expense: '💸',
 };
 
@@ -27,7 +27,7 @@ export function QuickActionButton({ type, onClick, className }: QuickActionButto
   const shortLabels: Record<TransactionType, string> = {
     income: 'Ingreso',
     donation: 'Donación',
-    investment: 'Inversión',
+    investment: 'Cooperación',
     expense: 'Gasto',
   };
 

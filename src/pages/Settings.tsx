@@ -41,6 +41,12 @@ export default function Settings() {
   const resetPhrase =
     'Cada peso cuenta: registrar el dinero con honestidad evita pérdidas, ayuda a planear y nos recuerda que la confianza se construye con cifras claras y decisiones responsables.';
 
+  const sanitizeNumericInput = (value: string) => {
+    const cleaned = value.replace(/[^0-9.]/g, '');
+    const [whole, ...rest] = cleaned.split('.');
+    return rest.length ? `${whole}.${rest.join('')}` : whole;
+  };
+
   useEffect(() => {
     if (currentPeriod) {
       setInitialFundInput(currentPeriod.initialFund.toString());
@@ -222,8 +228,9 @@ export default function Settings() {
                     min="0"
                     step="0.01"
                     value={initialFundInput}
-                    onChange={(e) => setInitialFundInput(e.target.value)}
+                    onChange={(e) => setInitialFundInput(sanitizeNumericInput(e.target.value))}
                     className={initialFundError ? 'border-destructive' : undefined}
+                    inputMode="decimal"
                   />
                   <Button onClick={handleUpdateInitialFund} className="sm:w-auto">
                     Guardar

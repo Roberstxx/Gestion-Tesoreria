@@ -62,6 +62,12 @@ export function TransactionForm({
   const [pendingData, setPendingData] = useState<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
   const [pendingAction, setPendingAction] = useState<'save' | 'saveAndNew'>('save');
 
+  const sanitizeNumericInput = (value: string) => {
+    const cleaned = value.replace(/[^0-9.]/g, '');
+    const [whole, ...rest] = cleaned.split('.');
+    return rest.length ? `${whole}.${rest.join('')}` : whole;
+  };
+
   // Filter categories by type
   const filteredCategories = categories.filter((c) => c.type === type);
 
@@ -84,13 +90,14 @@ export function TransactionForm({
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
+    const parsedAmount = Number(amount);
 
-    if (!amount || parseFloat(amount) <= 0) {
+    if (!amount || !Number.isFinite(parsedAmount) || parsedAmount <= 0) {
       newErrors.amount = 'Ingresa un monto válido';
     }
 
     if (type === 'income' && investmentAmount) {
-      const parsedInvestment = parseFloat(investmentAmount);
+      const parsedInvestment = Number(investmentAmount);
       if (!Number.isFinite(parsedInvestment) || parsedInvestment < 0) {
         newErrors.investmentAmount = 'Ingresa un monto de inversión válido';
       }
@@ -113,10 +120,10 @@ export function TransactionForm({
 
     return {
       type,
-      amount: parseFloat(amount),
+      amount: Number(amount),
       investmentAmount:
-        type === 'income' && investmentAmount && parseFloat(investmentAmount) > 0
-          ? parseFloat(investmentAmount)
+        type === 'income' && investmentAmount && Number(investmentAmount) > 0
+          ? Number(investmentAmount)
           : undefined,
       date,
       categoryId,
@@ -257,10 +264,11 @@ export function TransactionForm({
               type="number"
               placeholder="0.00"
               value={investmentAmount}
-              onChange={(e) => setInvestmentAmount(e.target.value)}
+              onChange={(e) => setInvestmentAmount(sanitizeNumericInput(e.target.value))}
               className={cn('pl-10 text-lg font-semibold', errors.investmentAmount && 'border-destructive')}
               min="0"
               step="0.01"
+              inputMode="decimal"
             />
           </div>
           <p className="text-xs text-muted-foreground">
@@ -284,10 +292,11 @@ export function TransactionForm({
             type="number"
             placeholder="0.00"
             value={amount}
-            onChange={(e) => setAmount(e.target.value)}
+            onChange={(e) => setAmount(sanitizeNumericInput(e.target.value))}
             className={cn('pl-10 text-lg font-semibold', errors.amount && 'border-destructive')}
             min="0"
             step="0.01"
+            inputMode="decimal"
           />
         </div>
         {errors.amount && <p className="text-sm text-destructive">{errors.amount}</p>}

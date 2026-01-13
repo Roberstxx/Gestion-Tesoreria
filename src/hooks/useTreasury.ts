@@ -17,35 +17,51 @@ export function useTreasury() {
   const [loading, setLoading] = useState(true);
   const repository = useMemo(() => getTreasuryRepository(), []);
 
+  const applySnapshot = useCallback((snapshot: {
+    transactions: Transaction[];
+    categories: Category[];
+    periods: Period[];
+    settings: AppSettings;
+  }) => {
+    setTransactions(snapshot.transactions);
+    setCategories(snapshot.categories);
+    setPeriods(snapshot.periods);
+    setSettings(snapshot.settings);
+  }, []);
+
   // Load data from repository
   useEffect(() => {
     let isMounted = true;
 
     const loadSnapshot = async () => {
-      let snapshot = await repository.getSnapshot();
-      if (!isMounted) return;
+      try {
+        let snapshot = await repository.getSnapshot();
+        if (!isMounted) return;
 
-      if (snapshot.categories.length === 0) {
-        const defaults = getDefaultCategories();
-        await Promise.all(
-          defaults.map((category) =>
-            repository.addCategory({
-              name: category.name,
-              type: category.type,
-              isDefault: category.isDefault,
-            })
-          )
-        );
-        snapshot = await repository.getSnapshot();
+        if (snapshot.categories.length === 0) {
+          const defaults = getDefaultCategories();
+          await Promise.all(
+            defaults.map((category) =>
+              repository.addCategory({
+                name: category.name,
+                type: category.type,
+                isDefault: category.isDefault,
+              })
+            )
+          );
+          snapshot = await repository.getSnapshot();
+        }
+
+        if (!isMounted) return;
+
+        applySnapshot(snapshot);
+      } catch (error) {
+        console.error('Error loading treasury snapshot:', error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
       }
-
-      if (!isMounted) return;
-
-      setTransactions(snapshot.transactions);
-      setCategories(snapshot.categories);
-      setPeriods(snapshot.periods);
-      setSettings(snapshot.settings);
-      setLoading(false);
     };
 
     loadSnapshot();
@@ -83,21 +99,21 @@ export function useTreasury() {
   const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newTransaction = await repository.addTransaction(transaction);
     const snapshot = await repository.getSnapshot();
-    setTransactions(snapshot.transactions);
+    applySnapshot(snapshot);
     return newTransaction;
-  }, [repository]);
+  }, [applySnapshot, repository]);
 
   const updateTransaction = useCallback(async (id: string, updates: Partial<Transaction>) => {
     await repository.updateTransaction(id, updates);
     const snapshot = await repository.getSnapshot();
-    setTransactions(snapshot.transactions);
-  }, [repository]);
+    applySnapshot(snapshot);
+  }, [applySnapshot, repository]);
 
   const deleteTransaction = useCallback(async (id: string) => {
     await repository.deleteTransaction(id);
     const snapshot = await repository.getSnapshot();
-    setTransactions(snapshot.transactions);
-  }, [repository]);
+    applySnapshot(snapshot);
+  }, [applySnapshot, repository]);
 
   // Category operations
   const addCategory = useCallback(async (category: Omit<Category, 'id'>) => {

@@ -14,20 +14,36 @@ export default function Register() {
   const initialType = (searchParams.get('type') as TransactionType) || undefined;
 
   const handleSubmit = async (data: Parameters<typeof addTransaction>[0]) => {
-    await addTransaction(data);
-    toast({
-      title: '✅ Movimiento registrado',
-      description: 'El movimiento se guardó correctamente.',
-    });
-    navigate('/');
+    try {
+      await addTransaction(data);
+      toast({
+        title: '✅ Movimiento registrado',
+        description: 'El movimiento se guardó correctamente.',
+      });
+      navigate('/');
+    } catch (error) {
+      toast({
+        title: '❌ No se pudo guardar',
+        description: error instanceof Error ? error.message : 'Inténtalo de nuevo.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const handleSaveAndNew = async (data: Parameters<typeof addTransaction>[0]) => {
-    await addTransaction(data);
-    toast({
-      title: '✅ Guardado',
-      description: 'Puedes registrar otro movimiento.',
-    });
+    try {
+      await addTransaction(data);
+      toast({
+        title: '✅ Guardado',
+        description: 'Puedes registrar otro movimiento.',
+      });
+    } catch (error) {
+      toast({
+        title: '❌ No se pudo guardar',
+        description: error instanceof Error ? error.message : 'Inténtalo de nuevo.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (

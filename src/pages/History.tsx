@@ -44,17 +44,33 @@ export default function History() {
 
   const handleSaveEdit = async (data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingTransaction) {
-      await updateTransaction(editingTransaction.id, data);
-      toast({ title: '✅ Actualizado', description: 'Movimiento actualizado correctamente.' });
-      setEditingTransaction(null);
+      try {
+        await updateTransaction(editingTransaction.id, data);
+        toast({ title: '✅ Actualizado', description: 'Movimiento actualizado correctamente.' });
+        setEditingTransaction(null);
+      } catch (error) {
+        toast({
+          title: '❌ No se pudo actualizar',
+          description: error instanceof Error ? error.message : 'Inténtalo de nuevo.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 
   const handleConfirmDelete = async () => {
     if (deletingTransaction) {
-      await deleteTransaction(deletingTransaction.id);
-      toast({ title: '🗑️ Eliminado', description: 'Movimiento eliminado.' });
-      setDeletingTransaction(null);
+      try {
+        await deleteTransaction(deletingTransaction.id);
+        toast({ title: '🗑️ Eliminado', description: 'Movimiento eliminado.' });
+        setDeletingTransaction(null);
+      } catch (error) {
+        toast({
+          title: '❌ No se pudo eliminar',
+          description: error instanceof Error ? error.message : 'Inténtalo de nuevo.',
+          variant: 'destructive',
+        });
+      }
     }
   };
 

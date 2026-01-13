@@ -31,7 +31,7 @@ export default function Register() {
   };
 
   return (
-    <AppLayout title="Registrar movimiento" subtitle="Agrega un nuevo ingreso, gasto o donación">
+    <AppLayout title="Registrar movimiento" subtitle="Agrega un nuevo ingreso, gasto, donación o cooperación">
       <div className="card-treasury">
         <TransactionForm
           categories={categories}

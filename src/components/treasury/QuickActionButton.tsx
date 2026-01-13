@@ -12,7 +12,7 @@ interface QuickActionButtonProps {
 const typeIcons: Record<TransactionType, string> = {
   income: '💰',
   donation: '🎁',
-  investment: '📦',
+  investment: '🤝',
   expense: '💸',
 };
 
@@ -27,7 +27,7 @@ export function QuickActionButton({ type, onClick, className }: QuickActionButto
   const shortLabels: Record<TransactionType, string> = {
     income: 'Ingreso',
     donation: 'Donación',
-    investment: 'Inversión',
+    investment: 'Cooperación',
     expense: 'Gasto',
   };
 
@@ -57,10 +57,10 @@ interface QuickActionsGridProps {
 }
 
 export function QuickActionsGrid({ onSelect, className }: QuickActionsGridProps) {
-  const types: TransactionType[] = ['income', 'donation', 'expense'];
+  const types: TransactionType[] = ['income', 'donation', 'investment', 'expense'];
 
   return (
-    <div className={cn('grid grid-cols-3 gap-2 sm:gap-3', className)}>
+    <div className={cn('grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3', className)}>
       {types.map((type) => (
         <QuickActionButton key={type} type={type} onClick={() => onSelect(type)} />
       ))}

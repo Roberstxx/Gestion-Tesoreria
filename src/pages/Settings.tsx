@@ -232,7 +232,7 @@ export default function Settings() {
                   <p className="text-sm text-destructive">{initialFundError}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Puedes dejarlo en 0 si el fondo inicial se definirá con la primera inversión.
+                  Puedes dejarlo en 0 si el fondo inicial se definirá con la primera cooperación.
                 </p>
               </div>
             </CardContent>
@@ -307,7 +307,7 @@ export default function Settings() {
               <TabsList className="grid w-full grid-cols-4 mb-4">
                 <TabsTrigger value="income" className="text-xs sm:text-sm">Ingresos</TabsTrigger>
                 <TabsTrigger value="donation" className="text-xs sm:text-sm">Donaciones</TabsTrigger>
-                <TabsTrigger value="investment" className="text-xs sm:text-sm">Inversiones</TabsTrigger>
+                <TabsTrigger value="investment" className="text-xs sm:text-sm">Cooperación</TabsTrigger>
                 <TabsTrigger value="expense" className="text-xs sm:text-sm">Gastos</TabsTrigger>
               </TabsList>
               {typeOptions.map((type) => (

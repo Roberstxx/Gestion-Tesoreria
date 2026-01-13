@@ -70,7 +70,7 @@ export interface Comparison {
 export const TRANSACTION_TYPE_LABELS: Record<TransactionType, string> = {
   income: 'Ingreso (Ventas)',
   donation: 'Donación',
-  investment: 'Inversión',
+  investment: 'Cooperación',
   expense: 'Gasto',
 };
 

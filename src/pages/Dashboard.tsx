@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTreasury } from '@/hooks/useTreasury';
 import { AppLayout, StatCard, QuickActionsGrid, BalanceLineChart, IncomeVsExpensesChart, CategoryPieChart, TransactionList } from '@/components/treasury';
-import { Wallet, TrendingUp, Gift, Package, CreditCard, BarChart3 } from 'lucide-react';
+import { Wallet, TrendingUp, Gift, HandCoins, CreditCard, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -74,10 +74,10 @@ export default function Dashboard() {
             icon={<Gift className="h-5 w-5 text-donation" />}
           />
           <StatCard
-            title="Inversiones"
+            title="Cooperación"
             value={currentMonthStats.investments}
             variant="investment"
-            icon={<Package className="h-5 w-5 text-investment" />}
+            icon={<HandCoins className="h-5 w-5 text-investment" />}
           />
           <StatCard
             title="Gastos"

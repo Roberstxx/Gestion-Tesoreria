@@ -148,11 +148,10 @@ export function getDefaultCategories(): Category[] {
     { id: 'cat-donation-1', name: 'Donación', type: 'donation', isDefault: true },
     { id: 'cat-donation-2', name: 'Apoyo', type: 'donation', isDefault: true },
     { id: 'cat-donation-3', name: 'Cooperación', type: 'donation', isDefault: true },
-    // Investments
-    { id: 'cat-investment-1', name: 'Compra para vender', type: 'investment', isDefault: true },
-    { id: 'cat-investment-2', name: 'Insumos', type: 'investment', isDefault: true },
-    { id: 'cat-investment-3', name: 'Bebidas', type: 'investment', isDefault: true },
-    { id: 'cat-investment-4', name: 'Snacks', type: 'investment', isDefault: true },
+    // Cooperation
+    { id: 'cat-investment-1', name: 'Cooperación sábado', type: 'investment', isDefault: true },
+    { id: 'cat-investment-2', name: 'Cooperación evento', type: 'investment', isDefault: true },
+    { id: 'cat-investment-3', name: 'Cooperación especial', type: 'investment', isDefault: true },
     // Expenses
     { id: 'cat-expense-1', name: 'Actividad', type: 'expense', isDefault: true },
     { id: 'cat-expense-2', name: 'Pastel/Comida', type: 'expense', isDefault: true },

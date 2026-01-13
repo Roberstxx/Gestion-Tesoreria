@@ -165,7 +165,7 @@ export function TransactionForm({
   ];
 
   if (type === 'investment' || initialData?.type === 'investment' || initialType === 'investment') {
-    typeButtons.splice(2, 0, { value: 'investment', label: 'Inversión', emoji: '📦' });
+    typeButtons.splice(2, 0, { value: 'investment', label: 'Cooperación', emoji: '🤝' });
   }
 
   const typeStyles: Record<TransactionType, string> = {
@@ -178,7 +178,7 @@ export function TransactionForm({
   const typeLabels: Record<TransactionType, string> = {
     income: 'Ingreso',
     donation: 'Donación',
-    investment: 'Inversión',
+    investment: 'Cooperación',
     expense: 'Gasto',
   };
 

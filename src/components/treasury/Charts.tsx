@@ -120,11 +120,7 @@ export function IncomeVsExpensesChart({ transactions, months = 6, className }: I
 
       const income = monthTransactions.reduce((sum, t) => sum + getTransactionInflow(t), 0);
 
-      const expenses = monthTransactions.reduce((sum, t) => {
-        const investmentOutflow = getInvestmentAmount(t);
-        const expenseOutflow = t.type === 'expense' ? t.amount : 0;
-        return sum + investmentOutflow + expenseOutflow;
-      }, 0);
+      const expenses = monthTransactions.reduce((sum, t) => sum + getTransactionOutflow(t), 0);
 
       return {
         name: format(month, 'MMM', { locale: es }),

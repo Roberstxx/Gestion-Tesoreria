@@ -3,7 +3,6 @@ import { TreasuryRepository } from './treasuryRepository';
 import { createFirebaseTreasuryRepository } from './firebase/treasuryRepository';
 import { hasValidFirebaseConfig, missingFirebaseKeys } from './firebase/firebaseClient';
 
-// Forzamos el uso de Firebase siempre
 export type DataProvider = 'firebase';
 export const dataProvider = 'firebase';
 export const isFirebaseProvider = true;
@@ -13,12 +12,10 @@ let repository: TreasuryRepository | null = null;
 
 export function getTreasuryRepository(): TreasuryRepository {
   if (!repository) {
-    // Si la configuración de Firebase es inválida, lanzamos error inmediatamente
+    // Si falta configuración, lanzamos un error claro
     if (!hasValidFirebaseConfig) {
       throw new Error(
-        `Error Crítico: Configuración de Firebase inválida. Faltan: ${missingFirebaseKeys.join(
-          ', '
-        )}. Configura las variables VITE_FIREBASE_* en Vercel o tu archivo .env`
+        `Error: Configuración de Firebase incompleta. Faltan: ${missingFirebaseKeys.join(', ')}`
       );
     }
     repository = createFirebaseTreasuryRepository();

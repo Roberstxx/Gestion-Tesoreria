@@ -147,7 +147,7 @@ export function TransactionForm({
     const data = buildSubmissionData();
     if (!data) return;
 
-    const needsConfirmation = ['income', 'donation', 'expense'].includes(type);
+    const needsConfirmation = ['income', 'donation', 'investment', 'expense'].includes(type);
     if (needsConfirmation) {
       setPendingData(data);
       setPendingAction(saveAndNew ? 'saveAndNew' : 'save');
@@ -161,12 +161,9 @@ export function TransactionForm({
   const typeButtons: { value: TransactionType; label: string; emoji: string }[] = [
     { value: 'income', label: 'Ingreso', emoji: '💰' },
     { value: 'donation', label: 'Donación', emoji: '🎁' },
+    { value: 'investment', label: 'Cooperación', emoji: '🤝' },
     { value: 'expense', label: 'Gasto', emoji: '💸' },
   ];
-
-  if (type === 'investment' || initialData?.type === 'investment' || initialType === 'investment') {
-    typeButtons.splice(2, 0, { value: 'investment', label: 'Cooperación', emoji: '🤝' });
-  }
 
   const typeStyles: Record<TransactionType, string> = {
     income: 'border-income bg-income/10 text-income',

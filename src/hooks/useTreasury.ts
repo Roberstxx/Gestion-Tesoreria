@@ -1,9 +1,10 @@
+// src/hooks/useTreasury.ts
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Transaction, Category, Period, AppSettings, TransactionType } from '@/types';
 import { calculateBalance, getMonthlyStats, getMonthlyComparisons, getWeeklyBreakdown } from '@/utils/calculations';
 import { parseISO } from 'date-fns';
-import { getTreasuryRepository, isFirebaseProvider } from '@/data';
-import { DEFAULT_SETTINGS, clearStoredData, getDefaultCategories, getStoredSnapshot } from '@/utils/storage';
+import { getTreasuryRepository } from '@/data';
+import { getDefaultCategories } from '@/utils/storage';
 
 export function useTreasury() {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -29,29 +30,19 @@ export function useTreasury() {
     setSettings(snapshot.settings);
   }, []);
 
-  const hasLocalData = useCallback(() => {
-    const snapshot = getStoredSnapshot();
-    return (
-      snapshot.transactions.length > 0 ||
-      snapshot.categories.length > 0 ||
-      snapshot.periods.length > 0 ||
-      snapshot.settings.currentPeriodId !== DEFAULT_SETTINGS.currentPeriodId ||
-      snapshot.settings.hasCompletedOnboarding !== DEFAULT_SETTINGS.hasCompletedOnboarding ||
-      snapshot.settings.theme !== DEFAULT_SETTINGS.theme
-    );
-  }, []);
-
   const ensureDefaultCategories = useCallback(async (snapshot: {
     transactions: Transaction[];
     categories: Category[];
     periods: Period[];
     settings: AppSettings;
   }) => {
+    // Si ya hay categorías en Firebase, no hacemos nada
     if (snapshot.categories.length > 0) {
       applySnapshot(snapshot);
       return snapshot;
     }
 
+    // Si está vacío, creamos las categorías por defecto directamente en Firebase
     const defaults = getDefaultCategories();
     await Promise.all(
       defaults.map((category) =>
@@ -68,36 +59,22 @@ export function useTreasury() {
     return refreshed;
   }, [applySnapshot, repository]);
 
-  // Load data from repository
+  // Carga de datos inicial (Solo desde el Repositorio de Firebase)
   useEffect(() => {
     let isMounted = true;
 
     const loadSnapshot = async () => {
       try {
-        let snapshot = await repository.getSnapshot();
+        setLoading(true);
+        // Obtenemos los datos directamente de la DB
+        const snapshot = await repository.getSnapshot();
+        
         if (!isMounted) return;
 
-        if (isFirebaseProvider) {
-          const isFirebaseEmpty =
-            snapshot.transactions.length === 0 &&
-            snapshot.categories.length === 0 &&
-            snapshot.periods.length === 0 &&
-            snapshot.settings.currentPeriodId === DEFAULT_SETTINGS.currentPeriodId &&
-            snapshot.settings.hasCompletedOnboarding === DEFAULT_SETTINGS.hasCompletedOnboarding &&
-            snapshot.settings.theme === DEFAULT_SETTINGS.theme;
-
-          if (isFirebaseEmpty && hasLocalData()) {
-            await repository.seedSnapshot(getStoredSnapshot());
-            clearStoredData();
-            snapshot = await repository.getSnapshot();
-          }
-        }
-
-        if (!isMounted) return;
-
+        // Aseguramos que existan categorías iniciales en la DB si es una cuenta nueva
         await ensureDefaultCategories(snapshot);
       } catch (error) {
-        console.error('Error loading treasury snapshot:', error);
+        console.error('Error al cargar datos de Firebase:', error);
       } finally {
         if (isMounted) {
           setLoading(false);
@@ -110,33 +87,10 @@ export function useTreasury() {
     return () => {
       isMounted = false;
     };
-  }, [ensureDefaultCategories, hasLocalData, repository]);
+  }, [ensureDefaultCategories, repository]);
 
-  // Current period
-  const currentPeriod = useMemo(() => {
-    if (!settings.currentPeriodId) return null;
-    return periods.find((p) => p.id === settings.currentPeriodId) || null;
-  }, [periods, settings.currentPeriodId]);
+  // --- Operaciones de datos (Todas llaman al repositorio y refrescan el estado) ---
 
-  // Current balance
-  const currentBalance = useMemo(() => {
-    if (!currentPeriod) return 0;
-    return calculateBalance(transactions, currentPeriod.initialFund);
-  }, [transactions, currentPeriod]);
-
-  // Monthly stats for current month
-  const currentMonthStats = useMemo(() => {
-    if (!currentPeriod) return null;
-    return getMonthlyStats(transactions, new Date(), currentPeriod.initialFund, transactions);
-  }, [transactions, currentPeriod]);
-
-  // Monthly comparisons
-  const monthlyComparisons = useMemo(() => {
-    if (!currentPeriod) return null;
-    return getMonthlyComparisons(transactions, new Date(), currentPeriod.initialFund);
-  }, [transactions, currentPeriod]);
-
-  // Transaction operations
   const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newTransaction = await repository.addTransaction(transaction);
     const snapshot = await repository.getSnapshot();
@@ -156,7 +110,6 @@ export function useTreasury() {
     applySnapshot(snapshot);
   }, [applySnapshot, repository]);
 
-  // Category operations
   const addCategory = useCallback(async (category: Omit<Category, 'id'>) => {
     const newCategory = await repository.addCategory(category);
     const snapshot = await repository.getSnapshot();
@@ -176,11 +129,6 @@ export function useTreasury() {
     setCategories(snapshot.categories);
   }, [repository]);
 
-  const getCategoriesByType = useCallback((type: TransactionType) => {
-    return categories.filter((c) => c.type === type);
-  }, [categories]);
-
-  // Period operations
   const addPeriod = useCallback(async (period: Omit<Period, 'id' | 'createdAt'>) => {
     const newPeriod = await repository.addPeriod(period);
     const snapshot = await repository.getSnapshot();
@@ -194,7 +142,6 @@ export function useTreasury() {
     setPeriods(snapshot.periods);
   }, [repository]);
 
-  // Settings operations
   const updateSettings = useCallback(async (updates: Partial<AppSettings>) => {
     const nextSettings = await repository.updateSettings(updates);
     setSettings(nextSettings);
@@ -214,30 +161,17 @@ export function useTreasury() {
     await ensureDefaultCategories(snapshot);
   }, [ensureDefaultCategories, repository]);
 
-  // Initialize default categories
-  const initializeCategories = useCallback(async () => {
-    const snapshot = await repository.getSnapshot();
-    const refreshed = await ensureDefaultCategories(snapshot);
-    setCategories(refreshed.categories);
-  }, [ensureDefaultCategories, repository]);
+  // Lógica de filtrado y cálculos (se mantiene igual ya que usa el estado actual)
+  const currentPeriod = useMemo(() => {
+    if (!settings.currentPeriodId) return null;
+    return periods.find((p) => p.id === settings.currentPeriodId) || null;
+  }, [periods, settings.currentPeriodId]);
 
-  // Get stats for a specific month
-  const getStatsForMonth = useCallback((month: Date) => {
-    if (!currentPeriod) return null;
-    return getMonthlyStats(transactions, month, currentPeriod.initialFund, transactions);
+  const currentBalance = useMemo(() => {
+    if (!currentPeriod) return 0;
+    return calculateBalance(transactions, currentPeriod.initialFund);
   }, [transactions, currentPeriod]);
 
-  // Get weekly breakdown for a month
-  const getWeeklyBreakdownForMonth = useCallback((month: Date) => {
-    return getWeeklyBreakdown(transactions, month);
-  }, [transactions]);
-
-  // Get category by ID
-  const getCategoryById = useCallback((id: string) => {
-    return categories.find((c) => c.id === id);
-  }, [categories]);
-
-  // Filter transactions
   const filterTransactions = useCallback((filters: {
     startDate?: Date;
     endDate?: Date;
@@ -247,67 +181,31 @@ export function useTreasury() {
   }) => {
     return transactions.filter((t) => {
       const date = parseISO(t.date);
-      
       if (filters.startDate && date < filters.startDate) return false;
       if (filters.endDate && date > filters.endDate) return false;
       if (filters.type && t.type !== filters.type) return false;
       if (filters.categoryId && t.categoryId !== filters.categoryId) return false;
       if (filters.search) {
         const searchLower = filters.search.toLowerCase();
-        const category = getCategoryById(t.categoryId);
-        if (
-          !t.description.toLowerCase().includes(searchLower) &&
-          !(category?.name.toLowerCase().includes(searchLower))
-        ) {
-          return false;
-        }
+        const category = categories.find(c => c.id === t.categoryId);
+        if (!t.description.toLowerCase().includes(searchLower) && 
+            !(category?.name.toLowerCase().includes(searchLower))) return false;
       }
-      
       return true;
-    }).sort((a, b) => {
-      const aTime = new Date(a.createdAt || a.date).getTime();
-      const bTime = new Date(b.createdAt || b.date).getTime();
-      return bTime - aTime;
-    });
-  }, [transactions, getCategoryById]);
+    }).sort((a, b) => new Date(b.createdAt || b.date).getTime() - new Date(a.createdAt || a.date).getTime());
+  }, [transactions, categories]);
 
   return {
-    // Data
-    transactions,
-    categories,
-    periods,
-    settings,
-    currentPeriod,
-    currentBalance,
-    currentMonthStats,
-    monthlyComparisons,
-    loading,
-
-    // Transaction operations
-    addTransaction,
-    updateTransaction,
-    deleteTransaction,
-
-    // Category operations
-    addCategory,
-    updateCategory,
-    deleteCategory,
-    getCategoriesByType,
-    getCategoryById,
-
-    // Period operations
-    addPeriod,
-    updatePeriod,
-
-    // Settings operations
-    updateSettings,
-    completeOnboarding,
-    initializeCategories,
-    resetAllData,
-
-    // Stats & filtering
-    getStatsForMonth,
-    getWeeklyBreakdownForMonth,
+    transactions, categories, periods, settings, currentPeriod, currentBalance, loading,
+    addTransaction, updateTransaction, deleteTransaction,
+    addCategory, updateCategory, deleteCategory,
+    addPeriod, updatePeriod, updateSettings, completeOnboarding, resetAllData,
     filterTransactions,
+    getCategoryById: (id: string) => categories.find(c => c.id === id),
+    getCategoriesByType: (type: TransactionType) => categories.filter(c => c.type === type),
+    getStatsForMonth: (month: Date) => currentPeriod ? getMonthlyStats(transactions, month, currentPeriod.initialFund, transactions) : null,
+    getWeeklyBreakdownForMonth: (month: Date) => getWeeklyBreakdown(transactions, month),
+    monthlyComparisons: currentPeriod ? getMonthlyComparisons(transactions, new Date(), currentPeriod.initialFund) : null,
+    currentMonthStats: currentPeriod ? getMonthlyStats(transactions, new Date(), currentPeriod.initialFund, transactions) : null,
   };
 }

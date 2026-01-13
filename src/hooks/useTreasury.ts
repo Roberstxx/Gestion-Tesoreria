@@ -1,7 +1,8 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Transaction, Category, Period, AppSettings, TransactionType } from '@/types';
 import { calculateBalance, getMonthlyStats, getMonthlyComparisons, getWeeklyBreakdown } from '@/utils/calculations';
-import { parseISO } from 'date-fns';
+import { parseISO, startOfMonth, endOfMonth, format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { getTreasuryRepository } from '@/data';
 import { getDefaultCategories } from '@/utils/storage';
 import { useAuth } from '@/context/AuthContext';
@@ -47,7 +48,6 @@ export function useTreasury() {
     settings: AppSettings;
   }) => {
     if (snapshot.categories.length > 0) {
-      applySnapshot(snapshot);
       return snapshot;
     }
 
@@ -65,9 +65,41 @@ export function useTreasury() {
 
     // Refrescamos para obtener los IDs generados por Firebase
     const refreshed = await repository.getSnapshot();
-    applySnapshot(refreshed);
     return refreshed;
-  }, [applySnapshot, repository]);
+  }, [repository]);
+
+  const ensureCurrentPeriod = useCallback(async (snapshot: {
+    transactions: Transaction[];
+    categories: Category[];
+    periods: Period[];
+    settings: AppSettings;
+  }) => {
+    if (snapshot.periods.length > 0 && snapshot.settings.currentPeriodId) {
+      return snapshot;
+    }
+
+    if (snapshot.periods.length > 0) {
+      await repository.updateSettings({
+        currentPeriodId: snapshot.periods[0].id,
+      });
+      return repository.getSnapshot();
+    }
+
+    const now = new Date();
+    const defaultPeriod = await repository.addPeriod({
+      name: format(now, 'MMMM yyyy', { locale: es }),
+      startDate: format(startOfMonth(now), 'yyyy-MM-dd'),
+      endDate: format(endOfMonth(now), 'yyyy-MM-dd'),
+      initialFund: 0,
+    });
+
+    await repository.updateSettings({
+      currentPeriodId: defaultPeriod.id,
+      hasCompletedOnboarding: true,
+    });
+
+    return repository.getSnapshot();
+  }, [repository]);
 
   // Carga inicial de datos desde Firebase
   useEffect(() => {
@@ -82,7 +114,9 @@ export function useTreasury() {
         if (!isMounted) return;
 
         // Validar e inicializar categorías base en la DB si es necesario
-        await ensureDefaultCategories(snapshot);
+        const withCategories = await ensureDefaultCategories(snapshot);
+        const withPeriod = await ensureCurrentPeriod(withCategories);
+        applySnapshot(withPeriod);
       } catch (error) {
         console.error('Error cargando datos de Firebase:', error);
       } finally {
@@ -97,7 +131,7 @@ export function useTreasury() {
     return () => {
       isMounted = false;
     };
-  }, [ensureDefaultCategories, repository]);
+  }, [applySnapshot, ensureCurrentPeriod, ensureDefaultCategories, repository]);
 
   // --- Operaciones de Transacciones ---
 
@@ -181,8 +215,10 @@ export function useTreasury() {
   const resetAllData = useCallback(async () => {
     await repository.resetAll();
     const snapshot = await repository.getSnapshot();
-    await ensureDefaultCategories(snapshot);
-  }, [ensureDefaultCategories, repository]);
+    const withCategories = await ensureDefaultCategories(snapshot);
+    const withPeriod = await ensureCurrentPeriod(withCategories);
+    applySnapshot(withPeriod);
+  }, [applySnapshot, ensureCurrentPeriod, ensureDefaultCategories, repository]);
 
   // --- Lógica de cálculos y filtrado ---
 

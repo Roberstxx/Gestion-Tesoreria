@@ -107,4 +107,4 @@ npm run lint
 
 ---
 
-Si necesitas ayuda para conectar reglas de seguridad o autenticación en Firebase, dímelo y te dejo la plantilla lista.
+

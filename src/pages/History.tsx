@@ -11,7 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { format, startOfMonth, endOfMonth, subMonths } from 'date-fns';
 
 export default function History() {
-  const { transactions, categories, filterTransactions, updateTransaction, deleteTransaction } = useTreasury();
+  const { transactions, categories, filterTransactions, updateTransaction, deleteTransaction, loading } = useTreasury();
   const { toast } = useToast();
 
   const [search, setSearch] = useState('');
@@ -73,6 +73,16 @@ export default function History() {
       }
     }
   };
+
+  if (loading) {
+    return (
+      <AppLayout title="Historial" subtitle="Cargando movimientos">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-pulse text-muted-foreground">Cargando historial...</div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout title="Historial" subtitle={`${filteredTransactions.length} movimientos`}>

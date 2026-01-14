@@ -20,6 +20,7 @@ export default function Reports() {
     getStatsForMonth, 
     getWeeklyBreakdownForMonth,
     filterTransactions,
+    loading,
   } = useTreasury();
   const { toast } = useToast();
   
@@ -132,6 +133,16 @@ export default function Reports() {
     const cat = categories.find((c) => c.id === categoryId);
     return cat?.name || 'Sin categoría';
   };
+
+  if (loading) {
+    return (
+      <AppLayout title="Reportes" subtitle="Cargando reportes">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-pulse text-muted-foreground">Cargando reportes...</div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!stats) {
     return (

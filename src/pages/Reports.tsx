@@ -4,7 +4,7 @@ import { useTreasury } from '@/hooks/useTreasury';
 import { formatCurrency } from '@/utils/calculations';
 import { generatePdfReport, generateCsvReport } from '@/utils/exportPdf';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { FileText, Download, TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react';
@@ -273,6 +273,7 @@ export default function Reports() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Desglose Semanal</CardTitle>
+            <CardDescription>Semanas del mes hasta el día de hoy.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto -mx-4 sm:mx-0">

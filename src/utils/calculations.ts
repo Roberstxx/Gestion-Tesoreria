@@ -1,5 +1,17 @@
 import { Transaction, MonthlyStats, WeeklyBreakdown, Comparison, Period } from '@/types';
-import { startOfMonth, endOfMonth, endOfWeek, isWithinInterval, parseISO, format, subMonths, eachWeekOfInterval } from 'date-fns';
+import {
+  startOfMonth,
+  endOfMonth,
+  endOfWeek,
+  isWithinInterval,
+  parseISO,
+  format,
+  subMonths,
+  eachWeekOfInterval,
+  isSameMonth,
+  endOfDay,
+  isBefore,
+} from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export function getInvestmentAmount(transaction: Transaction): number {
@@ -79,15 +91,21 @@ export function getWeeklyBreakdown(
 ): WeeklyBreakdown[] {
   const start = startOfMonth(month);
   const end = endOfMonth(month);
+  const today = endOfDay(new Date());
+  const effectiveEnd = isSameMonth(month, today) ? today : end;
+
+  if (isBefore(effectiveEnd, start)) {
+    return [];
+  }
   
   const weeks = eachWeekOfInterval(
-    { start, end },
+    { start, end: effectiveEnd },
     { weekStartsOn: 1 } // Monday
   );
 
   return weeks.map((weekStart, index) => {
     const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
-    const actualEnd = weekEnd > end ? end : weekEnd;
+    const actualEnd = weekEnd > effectiveEnd ? effectiveEnd : weekEnd;
     const actualStart = weekStart < start ? start : weekStart;
 
     const weekTransactions = getTransactionsForPeriod(

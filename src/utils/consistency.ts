@@ -22,6 +22,14 @@ function normalizeDate(value: string): string | null {
   return format(parsed, 'yyyy-MM-dd');
 }
 
+function normalizeTags(tags?: string[]): string[] | undefined {
+  if (!tags) return undefined;
+  const normalized = tags
+    .map((tag) => tag?.trim())
+    .filter((tag): tag is string => Boolean(tag));
+  return normalized.length > 0 ? Array.from(new Set(normalized)) : undefined;
+}
+
 function ensureUncategorizedCategory(categories: Category[], type: TransactionType): Category {
   const id = `${UNCATEGORIZED_PREFIX}${type}`;
   const existing = categories.find((category) => category.id === id);
@@ -126,7 +134,7 @@ function normalizeTransactions(
       date: normalizedDate,
       categoryId,
       description: transaction.description?.trim() || '',
-      tags: transaction.tags?.filter(Boolean),
+      tags: normalizeTags(transaction.tags),
       paymentMethod: transaction.paymentMethod?.trim() || undefined,
       receipt: transaction.receipt?.trim() || undefined,
       createdAt,
@@ -208,7 +216,7 @@ export function normalizeTransactionInput(
     date: normalizedDate,
     categoryId,
     description: input.description?.trim() || '',
-    tags: input.tags?.filter(Boolean),
+    tags: normalizeTags(input.tags),
     paymentMethod: input.paymentMethod?.trim() || undefined,
     receipt: input.receipt?.trim() || undefined,
   };

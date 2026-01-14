@@ -25,6 +25,7 @@ export default function Settings() {
     getCategoriesByType,
     updatePeriod,
     resetAllData,
+    loading,
   } = useTreasury();
   const { toast } = useToast();
   
@@ -187,6 +188,16 @@ export default function Settings() {
       </div>
     );
   };
+
+  if (loading) {
+    return (
+      <AppLayout title="Ajustes" subtitle="Cargando configuración">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-pulse text-muted-foreground">Cargando ajustes...</div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout title="Ajustes" subtitle="Categorías y configuración">

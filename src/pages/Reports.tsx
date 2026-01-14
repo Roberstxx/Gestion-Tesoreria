@@ -4,7 +4,7 @@ import { useTreasury } from '@/hooks/useTreasury';
 import { formatCurrency } from '@/utils/calculations';
 import { generatePdfReport, generateCsvReport } from '@/utils/exportPdf';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { FileText, Download, TrendingUp, TrendingDown, Minus, Calendar } from 'lucide-react';
@@ -20,6 +20,7 @@ export default function Reports() {
     getStatsForMonth, 
     getWeeklyBreakdownForMonth,
     filterTransactions,
+    loading,
   } = useTreasury();
   const { toast } = useToast();
   
@@ -132,6 +133,16 @@ export default function Reports() {
     const cat = categories.find((c) => c.id === categoryId);
     return cat?.name || 'Sin categoría';
   };
+
+  if (loading) {
+    return (
+      <AppLayout title="Reportes" subtitle="Cargando reportes">
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-pulse text-muted-foreground">Cargando reportes...</div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (!stats) {
     return (
@@ -262,6 +273,7 @@ export default function Reports() {
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Desglose Semanal</CardTitle>
+            <CardDescription>Semanas del mes hasta el día de hoy.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="overflow-x-auto -mx-4 sm:mx-0">

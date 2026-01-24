@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { AppLayout } from '@/components/treasury';
 import { useTreasury } from '@/hooks/useTreasury';
+import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -10,7 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, Pencil, Trash2, Tag, Settings2, Database, RefreshCw } from 'lucide-react';
+import { Plus, Pencil, Trash2, Tag, Settings2, Database, RefreshCw, LogOut } from 'lucide-react';
 import { TransactionType, Category, TRANSACTION_TYPE_LABELS } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { formatCurrency } from '@/utils/calculations';
@@ -27,6 +28,7 @@ export default function Settings() {
     resetAllData,
     loading,
   } = useTreasury();
+  const { signOut } = useAuth();
   const { toast } = useToast();
   
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
@@ -123,6 +125,14 @@ export default function Settings() {
     toast({
       title: '✅ Fondo inicial actualizado',
       description: 'El fondo inicial del periodo actual se guardó correctamente.',
+    });
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    toast({
+      title: '👋 Sesión cerrada',
+      description: 'Has cerrado sesión correctamente.',
     });
   };
 
@@ -456,6 +466,46 @@ export default function Settings() {
               <p>Tesorería App v1.0</p>
               <p className="text-xs mt-1">Datos almacenados en Firebase</p>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Account */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <LogOut className="h-5 w-5" />
+              Cuenta
+            </CardTitle>
+            <CardDescription>
+              Administra tu sesión activa
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="text-destructive border-destructive/30">
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Cerrar sesión
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>¿Cerrar sesión?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Tu sesión se cerrará en este dispositivo. Podrás volver a ingresar con tu correo y contraseña.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={handleSignOut}
+                  >
+                    Sí, cerrar sesión
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </CardContent>
         </Card>
       </div>

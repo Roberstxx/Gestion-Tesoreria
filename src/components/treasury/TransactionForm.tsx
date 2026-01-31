@@ -314,6 +314,9 @@ export function TransactionForm({
             inputMode="decimal"
           />
         </div>
+        <p className="text-xs text-muted-foreground">
+            Registra el total vendido del día.
+          </p>
         {errors.amount && <p className="text-sm text-destructive">{errors.amount}</p>}
       </div>
 

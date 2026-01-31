@@ -4,7 +4,7 @@ import { calculateBalance, getMonthlyStats, getMonthlyComparisons, getWeeklyBrea
 import { parseISO, startOfMonth, endOfMonth, format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getTreasuryRepository } from '@/data';
-import { getDefaultCategories } from '@/utils/storage';
+import { getDefaultCategories } from '@/data/defaultCategories';
 import { useAuth } from '@/context/AuthContext';
 
 export function useTreasury() {

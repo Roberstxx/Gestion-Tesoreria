@@ -5,6 +5,10 @@ import { componentTagger } from "lovable-tagger";
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
+  build: {
+    target: ['es2019', 'chrome61', 'safari11'],
+    cssTarget: 'chrome61',
+  },
   server: {
     host: "::",
     port: 8080,

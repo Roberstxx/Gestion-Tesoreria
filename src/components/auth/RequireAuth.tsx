@@ -1,6 +1,7 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { TreasuryProvider } from '@/hooks/useTreasury';
 
 export default function RequireAuth() {
   const { user, loading } = useAuth();
@@ -17,5 +18,9 @@ export default function RequireAuth() {
     return <Navigate to="/login" replace />;
   }
 
-  return <Outlet />;
+  return (
+    <TreasuryProvider>
+      <Outlet />
+    </TreasuryProvider>
+  );
 }

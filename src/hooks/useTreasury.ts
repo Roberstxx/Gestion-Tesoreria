@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, createContext, useContext, ReactNode, createElement } from 'react';
 import { Transaction, Category, Period, AppSettings, TransactionType } from '@/types';
 import { calculateBalance, getMonthlyStats, getMonthlyComparisons, getWeeklyBreakdown } from '@/utils/calculations';
 import { parseISO, startOfMonth, endOfMonth, format } from 'date-fns';
@@ -7,7 +7,7 @@ import { getTreasuryRepository } from '@/data';
 import { getDefaultCategories } from '@/data/defaultCategories';
 import { useAuth } from '@/context/AuthContext';
 
-export function useTreasury() {
+function useTreasuryState() {
   const { user } = useAuth();
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
@@ -291,4 +291,23 @@ export function useTreasury() {
     monthlyComparisons: currentPeriod ? getMonthlyComparisons(transactions, new Date(), currentPeriod.initialFund) : null,
     currentMonthStats: currentPeriod ? getMonthlyStats(transactions, new Date(), currentPeriod.initialFund, transactions) : null,
   };
+}
+
+type TreasuryContextValue = ReturnType<typeof useTreasuryState>;
+
+const TreasuryContext = createContext<TreasuryContextValue | null>(null);
+
+export function TreasuryProvider({ children }: { children: ReactNode }) {
+  const value = useTreasuryState();
+  return createElement(TreasuryContext.Provider, { value }, children);
+}
+
+export function useTreasury() {
+  const context = useContext(TreasuryContext);
+
+  if (!context) {
+    throw new Error('useTreasury debe usarse dentro de TreasuryProvider.');
+  }
+
+  return context;
 }

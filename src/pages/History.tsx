@@ -106,7 +106,7 @@ export default function History() {
               <SelectItem value="all">Todos</SelectItem>
               <SelectItem value="income">Ingresos</SelectItem>
               <SelectItem value="donation">Donaciones</SelectItem>
-              <SelectItem value="investment">Cooperación</SelectItem>
+              <SelectItem value="investment">Cooperación 10 pesos</SelectItem>
               <SelectItem value="expense">Gastos</SelectItem>
             </SelectContent>
           </Select>

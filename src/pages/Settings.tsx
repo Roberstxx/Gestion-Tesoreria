@@ -336,7 +336,7 @@ export default function Settings() {
               <TabsList className="grid w-full grid-cols-4 mb-4">
                 <TabsTrigger value="income" className="text-xs sm:text-sm">Ingresos</TabsTrigger>
                 <TabsTrigger value="donation" className="text-xs sm:text-sm">Donaciones</TabsTrigger>
-                <TabsTrigger value="investment" className="text-xs sm:text-sm">Cooperación</TabsTrigger>
+                <TabsTrigger value="investment" className="text-xs sm:text-sm">Cooperación 10 pesos</TabsTrigger>
                 <TabsTrigger value="expense" className="text-xs sm:text-sm">Gastos</TabsTrigger>
               </TabsList>
               {typeOptions.map((type) => (

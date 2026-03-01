@@ -268,6 +268,35 @@ function useTreasuryState() {
     };
   }, [reloadSnapshot, repository.subscribeSnapshot, user?.uid]);
 
+  useEffect(() => {
+    if (!user?.uid || repository.subscribeSnapshot) return;
+
+    const syncFromCloud = () => {
+      void reloadSnapshot();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncFromCloud();
+      }
+    };
+
+    const onFocus = () => {
+      syncFromCloud();
+    };
+
+    const interval = window.setInterval(syncFromCloud, 15000);
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [reloadSnapshot, repository.subscribeSnapshot, user?.uid]);
+
   const filterTransactions = useCallback((filters: {
     startDate?: Date;
     endDate?: Date;

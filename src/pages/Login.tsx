@@ -25,7 +25,9 @@ export default function Login() {
         case 'auth/invalid-email': return 'El correo no es válido.';
         case 'auth/user-disabled': return 'Cuenta deshabilitada.';
         case 'auth/user-not-found': return 'No existe la cuenta.';
-        case 'auth/wrong-password': return 'Contraseña incorrecta.';
+        case 'auth/wrong-password':
+        case 'auth/invalid-credential':
+          return 'Correo o contraseña incorrectos.';
         case 'auth/too-many-requests': return 'Demasiados intentos. Espera.';
         default: return 'Error al iniciar sesión.';
       }

@@ -58,6 +58,8 @@ La app usa **solo inicio de sesión** (sin registro). El alta de usuarios se ges
 2. Crea los usuarios desde la consola de Firebase.
 3. Inicia sesión en `/login` con las credenciales configuradas.
 
+> Nota: para login con correo/contraseña no necesitas OAuth popup/redirect. Si en consola ves el mensaje de dominio no autorizado para OAuth, agrega tu dominio en **Firebase Console → Authentication → Settings → Authorized domains** si planeas usar proveedores sociales o popup/redirect en el futuro.
+
 ### Estructura esperada en Firestore
 
 Colecciones:

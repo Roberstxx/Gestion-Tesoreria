@@ -6,6 +6,7 @@ import { es } from 'date-fns/locale';
 import { getTreasuryRepository } from '@/data';
 import { getDefaultCategories } from '@/data/defaultCategories';
 import { useAuth } from '@/context/AuthContext';
+import { getFirebaseErrorMessage } from '@/utils/firebaseErrors';
 
 function useTreasuryState() {
   const { user } = useAuth();
@@ -18,6 +19,7 @@ function useTreasuryState() {
     theme: 'light',
   });
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const repository = useMemo(() => {
     if (!user?.uid) {
@@ -110,6 +112,7 @@ function useTreasuryState() {
     const loadSnapshot = async () => {
       try {
         setLoading(true);
+        setError(null);
         await reloadSnapshot();
 
         if (!isMounted || !repository.subscribeSnapshot) {
@@ -122,6 +125,8 @@ function useTreasuryState() {
           setLoading(false);
         });
       } catch (error) {
+        const message = getFirebaseErrorMessage(error, 'Error cargando datos de Firebase');
+        setError(message);
         console.error('Error cargando datos de Firebase:', error);
       } finally {
         if (isMounted) {
@@ -139,19 +144,40 @@ function useTreasuryState() {
   }, [applySnapshot, reloadSnapshot, repository]);
 
   const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
-    const newTransaction = await repository.addTransaction(transaction);
-    await reloadSnapshot();
-    return newTransaction;
+    try {
+      setError(null);
+      const newTransaction = await repository.addTransaction(transaction);
+      await reloadSnapshot();
+      return newTransaction;
+    } catch (error) {
+      const message = getFirebaseErrorMessage(error, 'No se pudo guardar el movimiento en Firestore');
+      setError(message);
+      throw new Error(message);
+    }
   }, [reloadSnapshot, repository]);
 
   const updateTransaction = useCallback(async (id: string, updates: Partial<Transaction>) => {
-    await repository.updateTransaction(id, updates);
-    await reloadSnapshot();
+    try {
+      setError(null);
+      await repository.updateTransaction(id, updates);
+      await reloadSnapshot();
+    } catch (error) {
+      const message = getFirebaseErrorMessage(error, 'No se pudo actualizar el movimiento en Firestore');
+      setError(message);
+      throw new Error(message);
+    }
   }, [reloadSnapshot, repository]);
 
   const deleteTransaction = useCallback(async (id: string) => {
-    await repository.deleteTransaction(id);
-    await reloadSnapshot();
+    try {
+      setError(null);
+      await repository.deleteTransaction(id);
+      await reloadSnapshot();
+    } catch (error) {
+      const message = getFirebaseErrorMessage(error, 'No se pudo eliminar el movimiento de Firestore');
+      setError(message);
+      throw new Error(message);
+    }
   }, [reloadSnapshot, repository]);
 
   const addCategory = useCallback(async (category: Omit<Category, 'id'>) => {
@@ -337,6 +363,7 @@ function useTreasuryState() {
     currentPeriod,
     currentBalance,
     loading,
+    error,
     addTransaction,
     updateTransaction,
     deleteTransaction,

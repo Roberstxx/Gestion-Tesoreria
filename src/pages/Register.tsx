@@ -8,7 +8,7 @@ import { useToast } from '@/hooks/use-toast';
 export default function Register() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { categories, addTransaction } = useTreasury();
+  const { categories, addTransaction, error } = useTreasury();
   const { toast } = useToast();
 
   const initialType = (searchParams.get('type') as TransactionType) || undefined;
@@ -48,6 +48,12 @@ export default function Register() {
 
   return (
     <AppLayout title="Registrar movimiento" subtitle="Agrega un nuevo ingreso, gasto, donación o cooperación 10 pesos">
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
       <div className="card-treasury">
         <TransactionForm
           categories={categories}

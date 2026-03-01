@@ -15,7 +15,9 @@ import {
 import { es } from 'date-fns/locale';
 
 export function getInvestmentAmount(transaction: Transaction): number {
-  return transaction.type === 'investment' ? transaction.amount : 0;
+  if (transaction.type === 'investment') return transaction.amount;
+  if (transaction.type === 'income') return transaction.investmentAmount ?? 0;
+  return 0;
 }
 
 export function getTransactionInflow(transaction: Transaction): number {

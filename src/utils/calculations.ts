@@ -15,18 +15,26 @@ import {
 import { es } from 'date-fns/locale';
 
 export function getInvestmentAmount(transaction: Transaction): number {
-  return transaction.type === 'investment' ? transaction.amount : 0;
+  if (transaction.type === 'investment') return transaction.amount;
+  if (transaction.type === 'income') return transaction.investmentAmount ?? 0;
+  return 0;
 }
 
 export function getTransactionInflow(transaction: Transaction): number {
-  if (transaction.type === 'income' || transaction.type === 'donation' || transaction.type === 'investment') {
+  if (transaction.type === 'income' || transaction.type === 'donation') {
     return transaction.amount;
   }
   return 0;
 }
 
 export function getTransactionOutflow(transaction: Transaction): number {
-  return transaction.type === 'expense' ? transaction.amount : 0;
+  if (transaction.type === 'expense' || transaction.type === 'investment') {
+    return transaction.amount;
+  }
+  if (transaction.type === 'income') {
+    return transaction.investmentAmount ?? 0;
+  }
+  return 0;
 }
 
 export function calculateBalance(
@@ -74,7 +82,7 @@ export function getMonthlyStats(
     .filter((t) => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const net = income + donations + investments - expenses;
+  const net = income + donations - investments - expenses;
 
   // Calculate balance up to end of this month
   const transactionsUpToMonth = allTransactions.filter(
@@ -137,7 +145,7 @@ export function getWeeklyBreakdown(
       donations,
       investments,
       expenses,
-      net: income + donations + investments - expenses,
+      net: income + donations - investments - expenses,
     };
   });
 }

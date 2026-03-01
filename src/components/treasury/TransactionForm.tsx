@@ -37,6 +37,14 @@ interface TransactionFormProps {
   onSaveAndNew?: (data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => void;
 }
 
+// Objeto de descripciones dinámicas para cada tipo de movimiento
+const typeDescriptions: Record<TransactionType, string> = {
+  income: "Registra el total de los ingresos generados por ventas.",
+  investment: "Registra el total de la cooperación de los 10 pesos del día sábado.",
+  donation: "Registra el monto recibido como donación o apoyo voluntario.",
+  expense: "Registra el total de los gastos, compras o pagos realizados.",
+};
+
 export function TransactionForm({
   categories,
   onSubmit,
@@ -62,12 +70,8 @@ export function TransactionForm({
   const [pendingData, setPendingData] = useState<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
   const [pendingAction, setPendingAction] = useState<'save' | 'saveAndNew'>('save');
 
-  // Función mejorada para permitir solo números y un punto decimal
   const sanitizeNumericInput = (value: string) => {
-    // Elimina cualquier carácter que no sea número o punto
     let cleaned = value.replace(/[^0-9.]/g, '');
-    
-    // Evita múltiples puntos decimales
     const parts = cleaned.split('.');
     if (parts.length > 2) {
       cleaned = parts[0] + '.' + parts.slice(1).join('');
@@ -75,17 +79,14 @@ export function TransactionForm({
     return cleaned;
   };
 
-  // Bloquea teclas no numéricas (e, +, -, etc) en el evento onKeyDown
   const handleNumericKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (['e', 'E', '+', '-'].includes(e.key)) {
       e.preventDefault();
     }
   };
 
-  // Filter categories by type
   const filteredCategories = categories.filter((c) => c.type === type);
 
-  // Reset category when type changes
   useEffect(() => {
     if (!filteredCategories.find((c) => c.id === categoryId)) {
       setCategoryId(filteredCategories[0]?.id || '');
@@ -153,7 +154,6 @@ export function TransactionForm({
   ) => {
     if (saveAndNew && onSaveAndNew) {
       onSaveAndNew(data);
-      // Reset form
       setAmount('');
       setInvestmentAmount('');
       setDescription('');
@@ -181,8 +181,8 @@ export function TransactionForm({
 
   const typeButtons: { value: TransactionType; label: string; emoji: string }[] = [
     { value: 'income', label: 'Ingreso', emoji: '💰' },
-    { value: 'donation', label: 'Donación', emoji: '🎁' },
     { value: 'investment', label: 'Cooperación 10 pesos', emoji: '🤝' },
+    { value: 'donation', label: 'Donación', emoji: '🎁' },
     { value: 'expense', label: 'Gasto', emoji: '💸' },
   ];
 
@@ -206,9 +206,7 @@ export function TransactionForm({
         open={confirmOpen}
         onOpenChange={(open) => {
           setConfirmOpen(open);
-          if (!open) {
-            setPendingData(null);
-          }
+          if (!open) setPendingData(null);
         }}
       >
         <AlertDialogContent>
@@ -223,12 +221,7 @@ export function TransactionForm({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setPendingData(null);
-                setConfirmOpen(false);
-              }}
-            >
+            <AlertDialogCancel onClick={() => { setPendingData(null); setConfirmOpen(false); }}>
               Revisar
             </AlertDialogCancel>
             <AlertDialogAction
@@ -287,7 +280,7 @@ export function TransactionForm({
             />
           </div>
           <p className="text-xs text-muted-foreground">
-            Registra lo que se invirtió para lograr el ingreso.
+            Registra el total de lo que se invirtió para lograr el ingreso.
           </p>
           {errors.investmentAmount && (
             <p className="text-sm text-destructive">{errors.investmentAmount}</p>
@@ -314,9 +307,10 @@ export function TransactionForm({
             inputMode="decimal"
           />
         </div>
-        <p className="text-xs text-muted-foreground">
-            Registra el total vendido del día.
-          </p>
+        {/* TEXTO DINÁMICO SEGÚN EL TIPO SELECCIONADO */}
+        <p className="text-xs text-muted-foreground transition-all duration-300">
+          {typeDescriptions[type]}
+        </p>
         {errors.amount && <p className="text-sm text-destructive">{errors.amount}</p>}
       </div>
 

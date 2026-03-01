@@ -49,12 +49,12 @@ export function StatCard({
   const getTrendColor = () => {
     if (!comparison) return '';
     
-    // For expenses and investments, down is good
-    if (variant === 'expense' || variant === 'investment') {
+    // For expenses, down is good
+    if (variant === 'expense') {
       return comparison.trend === 'down' ? 'trend-up' : comparison.trend === 'up' ? 'trend-down' : 'trend-same';
     }
-    
-    // For income, donations, and net, up is good
+
+    // For income, donations, cooperation and net, up is good
     return comparison.trend === 'up' ? 'trend-up' : comparison.trend === 'down' ? 'trend-down' : 'trend-same';
   };
 

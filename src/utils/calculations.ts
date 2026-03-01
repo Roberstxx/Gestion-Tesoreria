@@ -21,14 +21,18 @@ export function getInvestmentAmount(transaction: Transaction): number {
 }
 
 export function getTransactionInflow(transaction: Transaction): number {
-  if (transaction.type === 'income' || transaction.type === 'donation') {
+  if (
+    transaction.type === 'income' ||
+    transaction.type === 'donation' ||
+    transaction.type === 'investment'
+  ) {
     return transaction.amount;
   }
   return 0;
 }
 
 export function getTransactionOutflow(transaction: Transaction): number {
-  if (transaction.type === 'expense' || transaction.type === 'investment') {
+  if (transaction.type === 'expense') {
     return transaction.amount;
   }
   return 0;

@@ -32,11 +32,10 @@ const firebaseConfig = {
 };
 
 const requiredFirebaseKeys: Array<keyof typeof firebaseConfig> = [
+  // Claves mínimas para inicializar Auth + Firestore
   'apiKey',
   'authDomain',
   'projectId',
-  'storageBucket',
-  'messagingSenderId',
   'appId',
 ];
 

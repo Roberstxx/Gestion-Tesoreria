@@ -9,6 +9,7 @@ export interface TreasurySnapshot {
 
 export interface TreasuryRepository {
   getSnapshot: () => Promise<TreasurySnapshot>;
+  subscribeSnapshot?: (onSnapshot: (snapshot: TreasurySnapshot) => void) => () => void;
   seedSnapshot: (snapshot: TreasurySnapshot) => Promise<void>;
   resetAll: () => Promise<void>;
   addTransaction: (data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => Promise<Transaction>;

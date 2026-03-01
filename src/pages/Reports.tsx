@@ -224,7 +224,7 @@ export default function Reports() {
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-caption text-muted-foreground">Cooperación</p>
+              <p className="text-caption text-muted-foreground">Cooperación 10 pesos</p>
               <p className="text-xl font-bold text-investment mt-1">{formatCurrency(stats.investments)}</p>
             </CardContent>
           </Card>
@@ -342,7 +342,7 @@ export default function Reports() {
                       <TableCell className="text-sm">{format(new Date(t.date), 'dd/MM')}</TableCell>
                       <TableCell>
                         <span className={`badge-${t.type} text-xs`}>
-                          {t.type === 'income' ? 'Ingreso' : t.type === 'donation' ? 'Donación' : t.type === 'investment' ? 'Cooperación' : 'Gasto'}
+                          {t.type === 'income' ? 'Ingreso' : t.type === 'donation' ? 'Donación' : t.type === 'investment' ? 'Cooperación 10 pesos' : 'Gasto'}
                         </span>
                       </TableCell>
                       <TableCell className="text-sm">{getCategoryName(t.categoryId)}</TableCell>

@@ -16,6 +16,7 @@ export default function Dashboard() {
     currentMonthStats,
     monthlyComparisons,
     loading,
+    error,
   } = useTreasury();
 
   if (loading) {
@@ -53,6 +54,12 @@ export default function Dashboard() {
       title="Dashboard"
       subtitle={`${currentMonth} • ${currentPeriod?.name || 'Sin periodo'}`}
     >
+      {error && (
+        <div className="mb-4 rounded-lg border border-destructive/40 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+          {error}
+        </div>
+      )}
+
       {/* Balance Card */}
       <div className="mb-6">
         <StatCard

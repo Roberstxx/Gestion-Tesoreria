@@ -1,7 +1,13 @@
 import { initializeApp, getApps } from 'firebase/app';
 import { getFirestore } from 'firebase/firestore';
 import { getAnalytics, isSupported } from 'firebase/analytics';
-import { getAuth } from 'firebase/auth';
+import {
+  getAuth,
+  initializeAuth,
+  inMemoryPersistence,
+  indexedDBLocalPersistence,
+  browserLocalPersistence,
+} from 'firebase/auth';
 
 type FirebaseEnvKey =
   | 'VITE_FIREBASE_API_KEY'
@@ -32,11 +38,10 @@ const firebaseConfig = {
 };
 
 const requiredFirebaseKeys: Array<keyof typeof firebaseConfig> = [
+  // Claves mínimas para inicializar Auth + Firestore
   'apiKey',
   'authDomain',
   'projectId',
-  'storageBucket',
-  'messagingSenderId',
   'appId',
 ];
 
@@ -53,7 +58,19 @@ if (!hasValidFirebaseConfig) {
 const app = getApps().length ? getApps()[0] : initializeApp(firebaseConfig);
 
 export const firestore = getFirestore(app);
-export const auth = getAuth(app);
+
+// La app usa login por correo/contraseña; al omitir popup/redirect resolver evitamos
+// dependencias de OAuth en dominios no autorizados y ruido innecesario en consola.
+export const auth = (() => {
+  try {
+    return initializeAuth(app, {
+      persistence: [indexedDBLocalPersistence, browserLocalPersistence, inMemoryPersistence],
+    });
+  } catch {
+    return getAuth(app);
+  }
+})();
+
 export let analytics: ReturnType<typeof getAnalytics> | null = null;
 
 if (firebaseConfig.measurementId) {

@@ -47,6 +47,9 @@ VITE_DATA_PROVIDER=local
 2. Copia las credenciales de tu app web y crea un `.env` siguiendo `.env.example` (incluye `measurementId` si usas Analytics).
 3. Cambia `VITE_DATA_PROVIDER=firebase`.
 
+> Variables mínimas requeridas para conexión (Auth + Firestore): `VITE_FIREBASE_API_KEY`, `VITE_FIREBASE_AUTH_DOMAIN`, `VITE_FIREBASE_PROJECT_ID`, `VITE_FIREBASE_APP_ID`.
+
+
 ## 🔐 Login con Firebase Authentication
 
 La app usa **solo inicio de sesión** (sin registro). El alta de usuarios se gestiona desde Firebase.
@@ -54,6 +57,8 @@ La app usa **solo inicio de sesión** (sin registro). El alta de usuarios se ges
 1. Activa el proveedor **Email/Password** en Firebase Authentication.
 2. Crea los usuarios desde la consola de Firebase.
 3. Inicia sesión en `/login` con las credenciales configuradas.
+
+> Nota: para login con correo/contraseña no necesitas OAuth popup/redirect. Si en consola ves el mensaje de dominio no autorizado para OAuth, agrega tu dominio en **Firebase Console → Authentication → Settings → Authorized domains** si planeas usar proveedores sociales o popup/redirect en el futuro.
 
 ### Estructura esperada en Firestore
 
@@ -77,6 +82,38 @@ Campos principales:
 
 **settings/app**
 - `currentPeriodId`, `hasCompletedOnboarding`, `theme`
+
+
+## 🔒 Reglas de Firestore (compatibles con esta app)
+
+La app guarda todo bajo la ruta del usuario autenticado:
+
+- `users/{uid}/transactions`
+- `users/{uid}/categories`
+- `users/{uid}/periods`
+- `users/{uid}/settings/app`
+
+Reglas recomendadas:
+
+```firestore
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      match /{allPaths=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+```
+
+> Si ves errores `permission-denied`, confirma que el usuario inició sesión y que el `uid` autenticado coincide con la ruta `users/{uid}`.
 
 ## ✅ Consistencia de datos
 

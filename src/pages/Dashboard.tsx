@@ -9,14 +9,13 @@ import { es } from 'date-fns/locale';
 export default function Dashboard() {
   const navigate = useNavigate();
   const {
-    transactions,
+    currentPeriodTransactions,
     categories,
     currentPeriod,
     currentBalance,
     currentMonthStats,
     monthlyComparisons,
     loading,
-    filterTransactions,
   } = useTreasury();
 
   if (loading) {
@@ -30,7 +29,11 @@ export default function Dashboard() {
   }
 
   const currentMonth = format(new Date(), 'MMMM yyyy', { locale: es });
-  const recentTransactions = filterTransactions({}).slice(0, 5);
+  const recentTransactions = currentPeriodTransactions.slice().sort((a, b) => {
+    const aTime = new Date(a.createdAt || a.date).getTime();
+    const bTime = new Date(b.createdAt || b.date).getTime();
+    return bTime - aTime;
+  }).slice(0, 5);
 
   const handleQuickAction = (type: string) => {
     navigate(`/register?type=${type}`);
@@ -83,7 +86,7 @@ export default function Dashboard() {
             icon={<Gift className="h-5 w-5 text-donation" />}
           />
           <StatCard
-            title="Cooperación"
+            title="Cooperación 10 pesos"
             value={currentMonthStats.investments}
             variant="investment"
             icon={<HandCoins className="h-5 w-5 text-investment" />}
@@ -116,19 +119,19 @@ export default function Dashboard() {
         {currentPeriod && (
           <Suspense fallback={<ChartSkeleton title="Saldo por semana" />}>
             <BalanceLineChart
-              transactions={transactions}
+              transactions={currentPeriodTransactions}
               initialFund={currentPeriod.initialFund}
               weeks={8}
             />
           </Suspense>
         )}
         <Suspense fallback={<ChartSkeleton title="Ingresos vs Gastos" />}>
-          <IncomeVsExpensesChart transactions={transactions} months={6} />
+          <IncomeVsExpensesChart transactions={currentPeriodTransactions} months={6} />
         </Suspense>
       </div>
 
       <Suspense fallback={<ChartSkeleton title="Top categorías del mes" />}>
-        <CategoryPieChart transactions={transactions} categories={categories} className="mb-6" />
+        <CategoryPieChart transactions={currentPeriodTransactions} categories={categories} className="mb-6" />
       </Suspense>
 
       {/* Recent Transactions */}

@@ -74,7 +74,10 @@ export function getMonthlyStats(
     .filter((t) => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  const net = income + donations + investments - expenses;
+  // Resultado neto: toda entrada (ingreso, donación, cooperación) menos gastos
+  const monthInflows = monthTransactions.reduce((sum, t) => sum + getTransactionInflow(t), 0);
+  const monthOutflows = monthTransactions.reduce((sum, t) => sum + getTransactionOutflow(t), 0);
+  const net = monthInflows - monthOutflows;
 
   // Calculate balance up to end of this month
   const transactionsUpToMonth = allTransactions.filter(
@@ -137,7 +140,9 @@ export function getWeeklyBreakdown(
       donations,
       investments,
       expenses,
-      net: income + donations + investments - expenses,
+      // Resultado semanal: entradas menos gastos
+      net: weekTransactions.reduce((sum, t) => sum + getTransactionInflow(t), 0) -
+        weekTransactions.reduce((sum, t) => sum + getTransactionOutflow(t), 0),
     };
   });
 }

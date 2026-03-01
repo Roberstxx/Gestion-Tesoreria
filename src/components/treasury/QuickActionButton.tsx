@@ -27,7 +27,7 @@ export function QuickActionButton({ type, onClick, className }: QuickActionButto
   const shortLabels: Record<TransactionType, string> = {
     income: 'Ingreso',
     donation: 'Donación',
-    investment: 'Cooperación',
+    investment: 'Cooperación 10 pesos',
     expense: 'Gasto',
   };
 

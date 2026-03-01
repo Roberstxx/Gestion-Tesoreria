@@ -4,6 +4,7 @@ import {
   doc,
   getDoc,
   getDocs,
+  onSnapshot,
   setDoc,
   updateDoc,
 } from 'firebase/firestore';
@@ -96,51 +97,92 @@ async function saveSettings(userId: string, settings: AppSettings): Promise<void
   await setDoc(settingsRef, settings, { merge: true });
 }
 
+async function buildNormalizedSnapshot(userId: string) {
+  const [transactions, categories, periods, settings] = await Promise.all([
+    fetchCollection<Transaction>(userId, COLLECTIONS.transactions),
+    fetchCollection<Category>(userId, COLLECTIONS.categories),
+    fetchCollection<Period>(userId, COLLECTIONS.periods),
+    fetchSettings(userId),
+  ]);
+
+  const normalized = normalizeTreasurySnapshot({
+    transactions,
+    categories,
+    periods,
+    settings,
+  });
+
+  if (normalized.changed) {
+    await Promise.all([
+      saveSettings(userId, normalized.snapshot.settings),
+      ...normalized.snapshot.categories.map((category) =>
+        setDoc(
+          doc(firestore, 'users', userId, COLLECTIONS.categories, category.id),
+          category,
+          { merge: true }
+        )
+      ),
+      ...normalized.snapshot.periods.map((period) =>
+        setDoc(
+          doc(firestore, 'users', userId, COLLECTIONS.periods, period.id),
+          period,
+          { merge: true }
+        )
+      ),
+      ...normalized.snapshot.transactions.map((transaction) =>
+        setDoc(
+          doc(firestore, 'users', userId, COLLECTIONS.transactions, transaction.id),
+          sanitizeFirestoreData(transaction),
+          { merge: true }
+        )
+      ),
+    ]);
+  }
+
+  return normalized.snapshot;
+}
+
 export function createFirebaseTreasuryRepository(userId: string): TreasuryRepository {
   return {
     async getSnapshot() {
-      const [transactions, categories, periods, settings] = await Promise.all([
-        fetchCollection<Transaction>(userId, COLLECTIONS.transactions),
-        fetchCollection<Category>(userId, COLLECTIONS.categories),
-        fetchCollection<Period>(userId, COLLECTIONS.periods),
-        fetchSettings(userId),
-      ]);
+      return buildNormalizedSnapshot(userId);
+    },
+    subscribeSnapshot(onSnapshotCallback) {
+      const refs = [
+        collection(firestore, 'users', userId, COLLECTIONS.transactions),
+        collection(firestore, 'users', userId, COLLECTIONS.categories),
+        collection(firestore, 'users', userId, COLLECTIONS.periods),
+        doc(firestore, 'users', userId, COLLECTIONS.settings, SETTINGS_DOC_ID),
+      ];
 
-      const normalized = normalizeTreasurySnapshot({
-        transactions,
-        categories,
-        periods,
-        settings,
-      });
+      let active = true;
+      let syncing = false;
 
-      if (normalized.changed) {
-        await Promise.all([
-          saveSettings(userId, normalized.snapshot.settings),
-          ...normalized.snapshot.categories.map((category) =>
-            setDoc(
-              doc(firestore, 'users', userId, COLLECTIONS.categories, category.id),
-              category,
-              { merge: true }
-            )
-          ),
-          ...normalized.snapshot.periods.map((period) =>
-            setDoc(
-              doc(firestore, 'users', userId, COLLECTIONS.periods, period.id),
-              period,
-              { merge: true }
-            )
-          ),
-          ...normalized.snapshot.transactions.map((transaction) =>
-            setDoc(
-              doc(firestore, 'users', userId, COLLECTIONS.transactions, transaction.id),
-              sanitizeFirestoreData(transaction),
-              { merge: true }
-            )
-          ),
-        ]);
-      }
+      const sync = async () => {
+        if (!active || syncing) return;
+        syncing = true;
+        try {
+          const snapshot = await buildNormalizedSnapshot(userId);
+          if (active) {
+            onSnapshotCallback(snapshot);
+          }
+        } catch (error) {
+          console.error('Error sincronizando snapshot en tiempo real:', error);
+        } finally {
+          syncing = false;
+        }
+      };
 
-      return normalized.snapshot;
+      void sync();
+
+      const unsubscribers = refs.map((ref) => onSnapshot(ref, () => {
+        void sync();
+      }));
+
+      return () => {
+        active = false;
+        unsubscribers.forEach((unsubscribe) => unsubscribe());
+      };
     },
     async seedSnapshot(snapshot) {
       await Promise.all([

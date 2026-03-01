@@ -105,11 +105,22 @@ function useTreasuryState() {
 
   useEffect(() => {
     let isMounted = true;
+    let unsubscribe: (() => void) | undefined;
 
     const loadSnapshot = async () => {
       try {
         setLoading(true);
         await reloadSnapshot();
+
+        if (!isMounted || !repository.subscribeSnapshot) {
+          return;
+        }
+
+        unsubscribe = repository.subscribeSnapshot((snapshot) => {
+          if (!isMounted) return;
+          applySnapshot(snapshot);
+          setLoading(false);
+        });
       } catch (error) {
         console.error('Error cargando datos de Firebase:', error);
       } finally {
@@ -123,8 +134,9 @@ function useTreasuryState() {
 
     return () => {
       isMounted = false;
+      unsubscribe?.();
     };
-  }, [reloadSnapshot]);
+  }, [applySnapshot, reloadSnapshot, repository]);
 
   const addTransaction = useCallback(async (transaction: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => {
     const newTransaction = await repository.addTransaction(transaction);
@@ -211,7 +223,7 @@ function useTreasuryState() {
   }, [transactions, currentPeriod]);
 
   useEffect(() => {
-    if (!user?.uid) return;
+    if (!user?.uid || repository.subscribeSnapshot) return;
 
     const syncFromCloud = () => {
       void reloadSnapshot();
@@ -237,7 +249,7 @@ function useTreasuryState() {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisibilityChange);
     };
-  }, [reloadSnapshot, user?.uid]);
+  }, [reloadSnapshot, repository.subscribeSnapshot, user?.uid]);
 
   const filterTransactions = useCallback((filters: {
     startDate?: Date;

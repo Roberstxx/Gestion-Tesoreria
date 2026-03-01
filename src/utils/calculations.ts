@@ -31,9 +31,6 @@ export function getTransactionOutflow(transaction: Transaction): number {
   if (transaction.type === 'expense' || transaction.type === 'investment') {
     return transaction.amount;
   }
-  if (transaction.type === 'income') {
-    return transaction.investmentAmount ?? 0;
-  }
   return 0;
 }
 

@@ -183,6 +183,7 @@ export function TransactionForm({
     { value: 'income', label: 'Ingreso', emoji: '💰' },
     { value: 'investment', label: 'Cooperación 10 pesos', emoji: '🤝' },
     { value: 'donation', label: 'Donación', emoji: '🎁' },
+    { value: 'investment', label: 'Cooperación 10 pesos', emoji: '🤝' },
     { value: 'expense', label: 'Gasto', emoji: '💸' },
   ];
 

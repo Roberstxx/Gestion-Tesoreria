@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, createContext, useContext, ReactNode, createElement } from 'react';
 import { Transaction, Category, Period, AppSettings, TransactionType } from '@/types';
 import { calculateBalance, getMonthlyStats, getMonthlyComparisons, getWeeklyBreakdown } from '@/utils/calculations';
-import { parseISO, startOfMonth, endOfMonth, format } from 'date-fns';
+import { parseISO, startOfMonth, endOfMonth, format, startOfDay, endOfDay, isWithinInterval } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { getTreasuryRepository } from '@/data';
 import { getDefaultCategories } from '@/data/defaultCategories';
@@ -217,10 +217,56 @@ function useTreasuryState() {
     return periods.find((p) => p.id === settings.currentPeriodId) || null;
   }, [periods, settings.currentPeriodId]);
 
+  const currentPeriodTransactions = useMemo(() => {
+    if (!currentPeriod) return [];
+
+    const start = startOfDay(parseISO(currentPeriod.startDate));
+    const end = endOfDay(parseISO(currentPeriod.endDate));
+
+    return transactions.filter((transaction) => {
+      const date = parseISO(transaction.date);
+      return isWithinInterval(date, { start, end });
+    });
+  }, [currentPeriod, transactions]);
+
+  const statsReferenceDate = useMemo(() => {
+    if (!currentPeriod) return new Date();
+    return parseISO(currentPeriod.startDate);
+  }, [currentPeriod]);
+
   const currentBalance = useMemo(() => {
     if (!currentPeriod) return 0;
-    return calculateBalance(transactions, currentPeriod.initialFund);
-  }, [transactions, currentPeriod]);
+    return calculateBalance(currentPeriodTransactions, currentPeriod.initialFund);
+  }, [currentPeriodTransactions, currentPeriod]);
+
+  useEffect(() => {
+    if (!user?.uid || repository.subscribeSnapshot) return;
+
+    const syncFromCloud = () => {
+      void reloadSnapshot();
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncFromCloud();
+      }
+    };
+
+    const onFocus = () => {
+      syncFromCloud();
+    };
+
+    const interval = window.setInterval(syncFromCloud, 15000);
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisibilityChange);
+    };
+  }, [reloadSnapshot, repository.subscribeSnapshot, user?.uid]);
 
   useEffect(() => {
     if (!user?.uid || repository.subscribeSnapshot) return;
@@ -305,10 +351,11 @@ function useTreasuryState() {
     completeOnboarding,
     resetAllData,
     filterTransactions,
-    getStatsForMonth: (month: Date) => currentPeriod ? getMonthlyStats(transactions, month, currentPeriod.initialFund, transactions) : null,
-    getWeeklyBreakdownForMonth: (month: Date) => getWeeklyBreakdown(transactions, month),
-    monthlyComparisons: currentPeriod ? getMonthlyComparisons(transactions, new Date(), currentPeriod.initialFund) : null,
-    currentMonthStats: currentPeriod ? getMonthlyStats(transactions, new Date(), currentPeriod.initialFund, transactions) : null,
+    currentPeriodTransactions,
+    getStatsForMonth: (month: Date) => currentPeriod ? getMonthlyStats(currentPeriodTransactions, month, currentPeriod.initialFund, currentPeriodTransactions) : null,
+    getWeeklyBreakdownForMonth: (month: Date) => getWeeklyBreakdown(currentPeriodTransactions, month),
+    monthlyComparisons: currentPeriod ? getMonthlyComparisons(currentPeriodTransactions, statsReferenceDate, currentPeriod.initialFund) : null,
+    currentMonthStats: currentPeriod ? getMonthlyStats(currentPeriodTransactions, statsReferenceDate, currentPeriod.initialFund, currentPeriodTransactions) : null,
   };
 }
 

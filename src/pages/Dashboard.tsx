@@ -83,7 +83,7 @@ export default function Dashboard() {
             icon={<Gift className="h-5 w-5 text-donation" />}
           />
           <StatCard
-            title="Cooperación"
+            title="Cooperación 10 pesos"
             value={currentMonthStats.investments}
             variant="investment"
             icon={<HandCoins className="h-5 w-5 text-investment" />}

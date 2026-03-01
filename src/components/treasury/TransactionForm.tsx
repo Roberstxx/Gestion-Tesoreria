@@ -182,7 +182,7 @@ export function TransactionForm({
   const typeButtons: { value: TransactionType; label: string; emoji: string }[] = [
     { value: 'income', label: 'Ingreso', emoji: '💰' },
     { value: 'donation', label: 'Donación', emoji: '🎁' },
-    { value: 'investment', label: 'Cooperación', emoji: '🤝' },
+    { value: 'investment', label: 'Cooperación 10 pesos', emoji: '🤝' },
     { value: 'expense', label: 'Gasto', emoji: '💸' },
   ];
 
@@ -196,7 +196,7 @@ export function TransactionForm({
   const typeLabels: Record<TransactionType, string> = {
     income: 'Ingreso',
     donation: 'Donación',
-    investment: 'Cooperación',
+    investment: 'Cooperación 10 pesos',
     expense: 'Gasto',
   };
 

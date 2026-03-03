@@ -295,10 +295,10 @@ export default function Reports() {
                         {format(new Date(week.weekStart), 'dd/MM')} - {format(new Date(week.weekEnd), 'dd/MM')}
                       </TableCell>
                       <TableCell className="text-right text-income">
-                        {formatCurrency(week.income + week.donations)}
+                        {formatCurrency(week.income + week.donations + week.investments)}
                       </TableCell>
                       <TableCell className="text-right text-expense">
-                        {formatCurrency(week.investments + week.expenses)}
+                        {formatCurrency(week.expenses)}
                       </TableCell>
                       <TableCell className={`text-right font-medium ${week.net >= 0 ? 'text-income' : 'text-expense'}`}>
                         {formatCurrency(week.net)}
@@ -353,9 +353,9 @@ export default function Reports() {
                         {t.type === 'income' && t.investmentAmount ? `-${formatCurrency(t.investmentAmount)}` : '—'}
                       </TableCell>
                       <TableCell className={`text-right font-medium ${
-                        t.type === 'income' || t.type === 'donation' ? 'text-income' : 'text-expense'
+                        t.type === 'expense' ? 'text-expense' : 'text-income'
                       }`}>
-                        {t.type === 'income' || t.type === 'donation' ? '+' : '-'}{formatCurrency(t.amount)}
+                        {t.type === 'expense' ? '-' : '+'}{formatCurrency(t.amount)}
                       </TableCell>
                     </TableRow>
                   ))}

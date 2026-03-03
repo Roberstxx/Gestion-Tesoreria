@@ -28,13 +28,13 @@ import { formatCurrency } from '@/utils/calculations';
 
 interface TransactionFormProps {
   categories: Category[];
-  onSubmit: (data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onSubmit: (data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void> | void;
   onCancel?: () => void;
   initialData?: Partial<Transaction>;
   initialType?: TransactionType;
   submitLabel?: string;
   showSaveAndNew?: boolean;
-  onSaveAndNew?: (data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => void;
+  onSaveAndNew?: (data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>) => Promise<void> | void;
 }
 
 // Objeto de descripciones dinámicas para cada tipo de movimiento
@@ -69,6 +69,7 @@ export function TransactionForm({
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [pendingData, setPendingData] = useState<Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> | null>(null);
   const [pendingAction, setPendingAction] = useState<'save' | 'saveAndNew'>('save');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const sanitizeNumericInput = (value: string) => {
     let cleaned = value.replace(/[^0-9.]/g, '');
@@ -148,23 +149,28 @@ export function TransactionForm({
     };
   };
 
-  const submitWithData = (
+  const submitWithData = async (
     data: Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'>,
     saveAndNew: boolean
   ) => {
-    if (saveAndNew && onSaveAndNew) {
-      onSaveAndNew(data);
-      setAmount('');
-      setInvestmentAmount('');
-      setDescription('');
-      setTags('');
-      setPaymentMethod('');
-    } else {
-      onSubmit(data);
+    setIsSubmitting(true);
+    try {
+      if (saveAndNew && onSaveAndNew) {
+        await onSaveAndNew(data);
+        setAmount('');
+        setInvestmentAmount('');
+        setDescription('');
+        setTags('');
+        setPaymentMethod('');
+      } else {
+        await onSubmit(data);
+      }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleSubmit = (saveAndNew: boolean = false) => {
+  const handleSubmit = async (saveAndNew: boolean = false) => {
     const data = buildSubmissionData();
     if (!data) return;
 
@@ -176,14 +182,13 @@ export function TransactionForm({
       return;
     }
 
-    submitWithData(data, saveAndNew);
+    await submitWithData(data, saveAndNew);
   };
 
   const typeButtons: { value: TransactionType; label: string; emoji: string }[] = [
     { value: 'income', label: 'Ingreso', emoji: '💰' },
     { value: 'investment', label: 'Cooperación 10 pesos', emoji: '🤝' },
     { value: 'donation', label: 'Donación', emoji: '🎁' },
-    { value: 'investment', label: 'Cooperación 10 pesos', emoji: '🤝' },
     { value: 'expense', label: 'Gasto', emoji: '💸' },
   ];
 
@@ -226,14 +231,15 @@ export function TransactionForm({
               Revisar
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                if (!pendingData) return;
-                submitWithData(pendingData, pendingAction === 'saveAndNew');
+              onClick={async () => {
+                if (!pendingData || isSubmitting) return;
+                await submitWithData(pendingData, pendingAction === 'saveAndNew');
                 setPendingData(null);
                 setConfirmOpen(false);
               }}
+              disabled={isSubmitting}
             >
-              Sí, registrar
+              {isSubmitting ? 'Guardando...' : 'Sí, registrar'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -394,18 +400,18 @@ export function TransactionForm({
       </div>
 
       <div className="flex flex-col sm:flex-row gap-2 pt-4">
-        <Button onClick={() => handleSubmit(false)} className="flex-1">
+        <Button type="button" onClick={() => void handleSubmit(false)} className="flex-1" disabled={isSubmitting}>
           <Save className="h-4 w-4 mr-2" />
-          {submitLabel}
+          {isSubmitting ? 'Guardando...' : submitLabel}
         </Button>
         {showSaveAndNew && onSaveAndNew && (
-          <Button onClick={() => handleSubmit(true)} variant="outline" className="flex-1">
+          <Button type="button" onClick={() => void handleSubmit(true)} variant="outline" className="flex-1" disabled={isSubmitting}>
             <Plus className="h-4 w-4 mr-2" />
-            Guardar y registrar otro
+            {isSubmitting ? 'Guardando...' : 'Guardar y registrar otro'}
           </Button>
         )}
         {onCancel && (
-          <Button onClick={onCancel} variant="ghost">
+          <Button type="button" onClick={onCancel} variant="ghost" disabled={isSubmitting}>
             Cancelar
           </Button>
         )}

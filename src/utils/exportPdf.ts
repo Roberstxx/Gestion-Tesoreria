@@ -127,8 +127,8 @@ export function generatePdfReport(data: ReportData): void {
   const weeklyData = weeklyBreakdown.map((week) => [
     `Semana ${week.weekNumber}`,
     `${format(new Date(week.weekStart), 'dd/MM')} - ${format(new Date(week.weekEnd), 'dd/MM')}`,
-    formatCurrency(week.income + week.donations),
-    formatCurrency(week.investments + week.expenses),
+    formatCurrency(week.income + week.donations + week.investments),
+    formatCurrency(week.expenses),
     formatCurrency(week.net),
   ]);
   

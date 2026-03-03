@@ -15,20 +15,25 @@ import {
 import { es } from 'date-fns/locale';
 
 export function getInvestmentAmount(transaction: Transaction): number {
+  // La KPI de cooperación debe sumar únicamente movimientos de tipo `investment`.
+  // `investmentAmount` en ingresos es dato informativo del costo de la venta.
   if (transaction.type === 'investment') return transaction.amount;
-  if (transaction.type === 'income') return transaction.investmentAmount ?? 0;
   return 0;
 }
 
 export function getTransactionInflow(transaction: Transaction): number {
-  if (transaction.type === 'income' || transaction.type === 'donation') {
+  if (
+    transaction.type === 'income' ||
+    transaction.type === 'donation' ||
+    transaction.type === 'investment'
+  ) {
     return transaction.amount;
   }
   return 0;
 }
 
 export function getTransactionOutflow(transaction: Transaction): number {
-  if (transaction.type === 'expense' || transaction.type === 'investment') {
+  if (transaction.type === 'expense') {
     return transaction.amount;
   }
   return 0;

@@ -4,11 +4,12 @@ import { useTreasury } from '@/hooks/useTreasury';
 import { AppLayout, TransactionForm } from '@/components/treasury';
 import { TransactionType } from '@/types';
 import { useToast } from '@/hooks/use-toast';
+import { parseISO } from 'date-fns';
 
 export default function Register() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { categories, addTransaction, error } = useTreasury();
+  const { categories, addTransaction, currentPeriod, error } = useTreasury();
   const { toast } = useToast();
 
   const initialType = (searchParams.get('type') as TransactionType) || undefined;
@@ -16,9 +17,17 @@ export default function Register() {
   const handleSubmit = async (data: Parameters<typeof addTransaction>[0]) => {
     try {
       await addTransaction(data);
+
+      const selectedDate = parseISO(data.date);
+      const outOfCurrentPeriod = currentPeriod
+        ? selectedDate < parseISO(currentPeriod.startDate) || selectedDate > parseISO(currentPeriod.endDate)
+        : false;
+
       toast({
         title: '✅ Movimiento registrado',
-        description: 'El movimiento se guardó correctamente.',
+        description: outOfCurrentPeriod
+          ? 'Se guardó correctamente. Ojo: la fecha quedó fuera del periodo actual, así que podría no aparecer en el inicio.'
+          : 'El movimiento se guardó correctamente.',
       });
       navigate('/');
     } catch (error) {

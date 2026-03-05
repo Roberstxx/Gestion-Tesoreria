@@ -4,17 +4,17 @@ import { useTreasury } from '@/hooks/useTreasury';
 import { AppLayout, StatCard, QuickActionsGrid, TransactionList } from '@/components/treasury';
 import { Wallet, TrendingUp, Gift, HandCoins, CreditCard, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
+import { getInvestmentAmount } from '@/utils/calculations';
 import { es } from 'date-fns/locale';
 
 export default function Dashboard() {
   const navigate = useNavigate();
   const {
+    transactions,
     currentPeriodTransactions,
     categories,
     currentPeriod,
     currentBalance,
-    currentMonthStats,
-    monthlyComparisons,
     loading,
     error,
   } = useTreasury();
@@ -35,6 +35,19 @@ export default function Dashboard() {
     const bTime = new Date(b.createdAt || b.date).getTime();
     return bTime - aTime;
   }).slice(0, 5);
+
+  const allTimeStats = transactions.reduce((acc, transaction) => {
+    if (transaction.type === 'income') acc.income += transaction.amount;
+    if (transaction.type === 'donation') acc.donations += transaction.amount;
+    if (transaction.type === 'expense') acc.expenses += transaction.amount;
+
+    acc.investments += getInvestmentAmount(transaction);
+
+    return acc;
+  }, { income: 0, donations: 0, investments: 0, expenses: 0 });
+
+  const accumulatedNet =
+    allTimeStats.income + allTimeStats.donations + allTimeStats.investments - allTimeStats.expenses;
 
   const handleQuickAction = (type: string) => {
     navigate(`/register?type=${type}`);
@@ -76,69 +89,62 @@ export default function Dashboard() {
         <QuickActionsGrid onSelect={handleQuickAction} />
       </div>
 
-      {/* Monthly Stats Grid */}
-      {currentMonthStats && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-          <StatCard
-            title="Ingresos"
-            value={currentMonthStats.income}
-            variant="income"
-            comparison={monthlyComparisons?.income}
-            icon={<TrendingUp className="h-5 w-5 text-income" />}
-          />
-          <StatCard
-            title="Donaciones"
-            value={currentMonthStats.donations}
-            variant="donation"
-            icon={<Gift className="h-5 w-5 text-donation" />}
-          />
-          <StatCard
-            title="Cooperación 10 pesos"
-            value={currentMonthStats.investments}
-            variant="investment"
-            icon={<HandCoins className="h-5 w-5 text-investment" />}
-          />
-          <StatCard
-            title="Gastos"
-            value={currentMonthStats.expenses}
-            variant="expense"
-            comparison={monthlyComparisons?.expenses}
-            icon={<CreditCard className="h-5 w-5 text-expense" />}
-          />
-        </div>
-      )}
+      {/* Accumulated Stats Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <StatCard
+          title="Ingresos"
+          value={allTimeStats.income}
+          variant="income"
+          icon={<TrendingUp className="h-5 w-5 text-income" />}
+        />
+        <StatCard
+          title="Donaciones"
+          value={allTimeStats.donations}
+          variant="donation"
+          icon={<Gift className="h-5 w-5 text-donation" />}
+        />
+        <StatCard
+          title="Cooperación 10 pesos"
+          value={allTimeStats.investments}
+          variant="investment"
+          icon={<HandCoins className="h-5 w-5 text-investment" />}
+        />
+        <StatCard
+          title="Gastos"
+          value={allTimeStats.expenses}
+          variant="expense"
+          icon={<CreditCard className="h-5 w-5 text-expense" />}
+        />
+      </div>
 
       {/* Net Result */}
-      {currentMonthStats && (
-        <div className="mb-6">
-          <StatCard
-            title="Resultado neto del mes"
-            value={currentMonthStats.net}
-            variant="net"
-            comparison={monthlyComparisons?.net}
-            icon={<BarChart3 className="h-5 w-5 text-primary" />}
-          />
-        </div>
-      )}
+      <div className="mb-6">
+        <StatCard
+          title="Resultado neto acumulado"
+          value={accumulatedNet}
+          variant="net"
+          icon={<BarChart3 className="h-5 w-5 text-primary" />}
+        />
+      </div>
 
       {/* Charts */}
       <div className="grid md:grid-cols-2 gap-4 mb-6">
         {currentPeriod && (
           <Suspense fallback={<ChartSkeleton title="Saldo por semana" />}>
             <BalanceLineChart
-              transactions={currentPeriodTransactions}
+              transactions={transactions}
               initialFund={currentPeriod.initialFund}
               weeks={8}
             />
           </Suspense>
         )}
         <Suspense fallback={<ChartSkeleton title="Ingresos vs Gastos" />}>
-          <IncomeVsExpensesChart transactions={currentPeriodTransactions} months={6} />
+          <IncomeVsExpensesChart transactions={transactions} months={6} />
         </Suspense>
       </div>
 
       <Suspense fallback={<ChartSkeleton title="Top categorías del mes" />}>
-        <CategoryPieChart transactions={currentPeriodTransactions} categories={categories} className="mb-6" />
+        <CategoryPieChart transactions={transactions} categories={categories} className="mb-6" />
       </Suspense>
 
       {/* Recent Transactions */}

@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { format } from 'date-fns';
+import { format, isValid, parse, parseISO } from 'date-fns';
 import { Calendar, DollarSign, Tag, FileText, CreditCard, Save, Plus } from 'lucide-react';
 import { formatCurrency } from '@/utils/calculations';
 
@@ -86,6 +86,28 @@ export function TransactionForm({
     }
   };
 
+
+  const normalizeDateInput = (value: string): string | null => {
+    if (!value) return null;
+
+    const trimmed = value.trim();
+
+    const isoParsed = parseISO(trimmed);
+    if (isValid(isoParsed)) return format(isoParsed, 'yyyy-MM-dd');
+
+    const parsedLatam = parse(trimmed, 'd/M/yyyy', new Date());
+    if (isValid(parsedLatam) && format(parsedLatam, 'd/M/yyyy') === trimmed) {
+      return format(parsedLatam, 'yyyy-MM-dd');
+    }
+
+    const parsedLatamPadded = parse(trimmed, 'dd/MM/yyyy', new Date());
+    if (isValid(parsedLatamPadded) && format(parsedLatamPadded, 'dd/MM/yyyy') === trimmed) {
+      return format(parsedLatamPadded, 'yyyy-MM-dd');
+    }
+
+    return null;
+  };
+
   const filteredCategories = categories.filter((c) => c.type === type);
 
   useEffect(() => {
@@ -121,6 +143,8 @@ export function TransactionForm({
 
     if (!date) {
       newErrors.date = 'Selecciona una fecha';
+    } else if (!normalizeDateInput(date)) {
+      newErrors.date = 'Ingresa una fecha válida';
     }
 
     if (!categoryId) {
@@ -134,6 +158,9 @@ export function TransactionForm({
   const buildSubmissionData = (): Omit<Transaction, 'id' | 'createdAt' | 'updatedAt'> | null => {
     if (!validate()) return null;
 
+    const normalizedDate = normalizeDateInput(date);
+    if (!normalizedDate) return null;
+
     return {
       type,
       amount: Number(amount),
@@ -141,7 +168,7 @@ export function TransactionForm({
         type === 'income' && investmentAmount && Number(investmentAmount) > 0
           ? Number(investmentAmount)
           : undefined,
-      date,
+      date: normalizedDate,
       categoryId,
       description: description.trim(),
       tags: tags ? tags.split(',').map((t) => t.trim()).filter(Boolean) : undefined,

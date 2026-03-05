@@ -16,7 +16,7 @@ export default function History() {
 
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<TransactionType | 'all'>('all');
-  const [dateRange, setDateRange] = useState<'all' | 'month' | '3months'>('month');
+  const [dateRange, setDateRange] = useState<'all' | 'month' | '3months'>('all');
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
   const [deletingTransaction, setDeletingTransaction] = useState<Transaction | null>(null);
 

@@ -1,6 +1,6 @@
 import { Category, Transaction, Period, AppSettings, TransactionType } from '@/types';
 import { TreasurySnapshot } from '@/data/treasuryRepository';
-import { format, isValid, parseISO } from 'date-fns';
+import { format, isValid, parse, parseISO } from 'date-fns';
 
 const DEFAULT_SETTINGS: AppSettings = {
   currentPeriodId: null,
@@ -17,9 +17,26 @@ function isTransactionType(value: string): value is TransactionType {
 }
 
 function normalizeDate(value: string): string | null {
-  const parsed = parseISO(value);
-  if (!isValid(parsed)) return null;
-  return format(parsed, 'yyyy-MM-dd');
+  if (!value || typeof value !== 'string') return null;
+
+  const trimmed = value.trim();
+
+  const isoParsed = parseISO(trimmed);
+  if (isValid(isoParsed)) {
+    return format(isoParsed, 'yyyy-MM-dd');
+  }
+
+  const parsedLatam = parse(trimmed, 'd/M/yyyy', new Date());
+  if (isValid(parsedLatam) && format(parsedLatam, 'd/M/yyyy') === trimmed) {
+    return format(parsedLatam, 'yyyy-MM-dd');
+  }
+
+  const parsedLatamPadded = parse(trimmed, 'dd/MM/yyyy', new Date());
+  if (isValid(parsedLatamPadded) && format(parsedLatamPadded, 'dd/MM/yyyy') === trimmed) {
+    return format(parsedLatamPadded, 'yyyy-MM-dd');
+  }
+
+  return null;
 }
 
 function normalizeTags(tags?: string[]): string[] | undefined {

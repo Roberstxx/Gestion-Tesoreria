@@ -255,44 +255,12 @@ function useTreasuryState() {
     });
   }, [currentPeriod, transactions]);
 
-  const statsReferenceDate = useMemo(() => {
-    if (!currentPeriod) return new Date();
-    return parseISO(currentPeriod.startDate);
-  }, [currentPeriod]);
+  const statsReferenceDate = useMemo(() => new Date(), []);
 
   const currentBalance = useMemo(() => {
     if (!currentPeriod) return 0;
-    return calculateBalance(currentPeriodTransactions, currentPeriod.initialFund);
-  }, [currentPeriodTransactions, currentPeriod]);
-
-  useEffect(() => {
-    if (!user?.uid || repository.subscribeSnapshot) return;
-
-    const syncFromCloud = () => {
-      void reloadSnapshot();
-    };
-
-    const onVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        syncFromCloud();
-      }
-    };
-
-    const onFocus = () => {
-      syncFromCloud();
-    };
-
-    const interval = window.setInterval(syncFromCloud, 15000);
-
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onVisibilityChange);
-
-    return () => {
-      window.clearInterval(interval);
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisibilityChange);
-    };
-  }, [reloadSnapshot, repository.subscribeSnapshot, user?.uid]);
+    return calculateBalance(transactions, currentPeriod.initialFund);
+  }, [transactions, currentPeriod]);
 
   useEffect(() => {
     if (!user?.uid || repository.subscribeSnapshot) return;
@@ -379,10 +347,10 @@ function useTreasuryState() {
     resetAllData,
     filterTransactions,
     currentPeriodTransactions,
-    getStatsForMonth: (month: Date) => currentPeriod ? getMonthlyStats(currentPeriodTransactions, month, currentPeriod.initialFund, currentPeriodTransactions) : null,
-    getWeeklyBreakdownForMonth: (month: Date) => getWeeklyBreakdown(currentPeriodTransactions, month),
-    monthlyComparisons: currentPeriod ? getMonthlyComparisons(currentPeriodTransactions, statsReferenceDate, currentPeriod.initialFund) : null,
-    currentMonthStats: currentPeriod ? getMonthlyStats(currentPeriodTransactions, statsReferenceDate, currentPeriod.initialFund, currentPeriodTransactions) : null,
+    getStatsForMonth: (month: Date) => currentPeriod ? getMonthlyStats(transactions, month, currentPeriod.initialFund, transactions) : null,
+    getWeeklyBreakdownForMonth: (month: Date) => getWeeklyBreakdown(transactions, month),
+    monthlyComparisons: currentPeriod ? getMonthlyComparisons(transactions, statsReferenceDate, currentPeriod.initialFund) : null,
+    currentMonthStats: currentPeriod ? getMonthlyStats(transactions, statsReferenceDate, currentPeriod.initialFund, transactions) : null,
   };
 }
 

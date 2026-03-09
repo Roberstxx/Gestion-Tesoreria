@@ -60,6 +60,9 @@ export function TransactionForm({
   const [investmentAmount, setInvestmentAmount] = useState(
     initialData?.investmentAmount?.toString() || ''
   );
+  const [investmentSource, setInvestmentSource] = useState<'cashbox' | 'external'>(
+    initialData?.investmentSource || 'cashbox'
+  );
   const [date, setDate] = useState(initialData?.date || format(new Date(), 'yyyy-MM-dd'));
   const [categoryId, setCategoryId] = useState(initialData?.categoryId || '');
   const [description, setDescription] = useState(initialData?.description || '');
@@ -119,6 +122,7 @@ export function TransactionForm({
   useEffect(() => {
     if (type !== 'income') {
       setInvestmentAmount('');
+      setInvestmentSource('cashbox');
       setErrors((prev) => {
         const { investmentAmount: _, ...rest } = prev;
         return rest;
@@ -167,6 +171,10 @@ export function TransactionForm({
       investmentAmount:
         type === 'income' && investmentAmount && Number(investmentAmount) > 0
           ? Number(investmentAmount)
+          : undefined,
+      investmentSource:
+        type === 'income' && investmentAmount && Number(investmentAmount) > 0
+          ? investmentSource
           : undefined,
       date: normalizedDate,
       categoryId,
@@ -316,6 +324,28 @@ export function TransactionForm({
           <p className="text-xs text-muted-foreground">
             Registra el total de lo que se invirtió para lograr el ingreso.
           </p>
+
+          <div className="space-y-2 pt-1">
+            <Label htmlFor="investmentSource">¿De dónde salió esa inversión?</Label>
+            <Select
+              value={investmentSource}
+              onValueChange={(value: 'cashbox' | 'external') => setInvestmentSource(value)}
+            >
+              <SelectTrigger id="investmentSource">
+                <SelectValue placeholder="Selecciona el origen" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="cashbox">Salió de la caja</SelectItem>
+                <SelectItem value="external">Fue dinero externo</SelectItem>
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              {investmentSource === 'cashbox'
+                ? 'Se descontará automáticamente del ingreso para reflejar solo la ganancia neta en caja.'
+                : 'No se descuenta de caja. Úsalo cuando el capital invertido no salió de la caja actual.'}
+            </p>
+          </div>
+
           {errors.investmentAmount && (
             <p className="text-sm text-destructive">{errors.investmentAmount}</p>
           )}

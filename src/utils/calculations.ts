@@ -22,11 +22,19 @@ export function getInvestmentAmount(transaction: Transaction): number {
 }
 
 export function getTransactionInflow(transaction: Transaction): number {
-  if (
-    transaction.type === 'income' ||
-    transaction.type === 'donation' ||
-    transaction.type === 'investment'
-  ) {
+  if (transaction.type === 'income') {
+    const investmentAmount = transaction.investmentAmount ?? 0;
+    const investmentSource = transaction.investmentSource ?? 'cashbox';
+
+    // Si la inversión salió de caja, el impacto real en caja es la utilidad neta.
+    if (investmentAmount > 0 && investmentSource === 'cashbox') {
+      return transaction.amount - investmentAmount;
+    }
+
+    return transaction.amount;
+  }
+
+  if (transaction.type === 'donation' || transaction.type === 'investment') {
     return transaction.amount;
   }
   return 0;

@@ -7,6 +7,7 @@ export interface Transaction {
   type: TransactionType;
   amount: number;
   investmentAmount?: number;
+  investmentSource?: 'cashbox' | 'external';
   date: string; // ISO date string
   categoryId: string;
   description: string;

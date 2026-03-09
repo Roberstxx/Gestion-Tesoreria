@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { Transaction, Category } from '@/types';
 import { TransactionBadge } from './TransactionBadge';
-import { formatCurrency } from '@/utils/calculations';
+import { formatCurrency, getTransactionInflow } from '@/utils/calculations';
 import { format, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ChevronRight, MoreVertical, Pencil, Trash2 } from 'lucide-react';
@@ -30,7 +30,18 @@ export function TransactionItem({
   onClick,
   showActions = true,
 }: TransactionItemProps) {
-  const isOutflow = transaction.type === 'expense';
+  const incomeNetAmount = transaction.type === 'income'
+    ? getTransactionInflow(transaction)
+    : null;
+  const isIncomeCashboxNet =
+    transaction.type === 'income' &&
+    (transaction.investmentSource ?? 'cashbox') === 'cashbox' &&
+    (transaction.investmentAmount ?? 0) > 0;
+
+  const displayedAmount = transaction.type === 'income' && incomeNetAmount !== null
+    ? incomeNetAmount
+    : transaction.amount;
+  const amountSign = displayedAmount < 0 ? '-' : '+';
   const investmentAmount =
     transaction.type === 'income' ? transaction.investmentAmount : undefined;
 
@@ -73,11 +84,16 @@ export function TransactionItem({
         <p
           className={cn(
             'font-semibold currency-display',
-            isOutflow ? 'text-expense' : 'text-income'
+            amountSign === '-' ? 'text-expense' : 'text-income'
           )}
         >
-          {isOutflow ? '-' : '+'}{formatCurrency(transaction.amount)}
+          {amountSign}{formatCurrency(Math.abs(displayedAmount))}
         </p>
+        {transaction.type === 'income' && isIncomeCashboxNet && (
+          <p className="text-xs text-muted-foreground">
+            Ingreso bruto: +{formatCurrency(transaction.amount)}
+          </p>
+        )}
         {investmentAmount && investmentAmount > 0 && (
           <p className="text-xs text-muted-foreground">
             Inversión: -{formatCurrency(investmentAmount)}

@@ -56,7 +56,7 @@ export function generatePdfReport(data: ReportData): void {
   // Summary table
   const summaryData = [
     ['Saldo Inicial', formatCurrency(stats.balance - stats.net)],
-    ['Ingresos (Ventas)', formatCurrency(stats.income)],
+    ['Ingresos netos (Ventas)', formatCurrency(stats.income)],
     ['Donaciones', formatCurrency(stats.donations)],
     ['Cooperación', formatCurrency(stats.investments)],
     ['Gastos', formatCurrency(stats.expenses)],
@@ -95,7 +95,7 @@ export function generatePdfReport(data: ReportData): void {
     };
     
     const comparisonData = [
-      ['Ingresos', formatCurrency(previousMonthStats.income), formatCurrency(stats.income), calcChange(stats.income, previousMonthStats.income)],
+      ['Ingresos netos', formatCurrency(previousMonthStats.income), formatCurrency(stats.income), calcChange(stats.income, previousMonthStats.income)],
       ['Gastos', formatCurrency(previousMonthStats.expenses), formatCurrency(stats.expenses), calcChange(stats.expenses, previousMonthStats.expenses)],
       ['Neto', formatCurrency(previousMonthStats.net), formatCurrency(stats.net), calcChange(stats.net, previousMonthStats.net)],
     ];
@@ -127,7 +127,7 @@ export function generatePdfReport(data: ReportData): void {
   const weeklyData = weeklyBreakdown.map((week) => [
     `Semana ${week.weekNumber}`,
     `${format(new Date(week.weekStart), 'dd/MM')} - ${format(new Date(week.weekEnd), 'dd/MM')}`,
-    formatCurrency(week.income + week.donations + week.investments),
+    formatCurrency(week.income + week.donations),
     formatCurrency(week.expenses),
     formatCurrency(week.net),
   ]);
@@ -236,7 +236,7 @@ export function generateCsvReport(data: ReportData): void {
   // Build CSV content
   let csv = 'RESUMEN DEL MES\n';
   csv += `Mes,${format(month, 'MMMM yyyy', { locale: es })}\n`;
-  csv += `Ingresos,${stats.income}\n`;
+  csv += `Ingresos netos,${stats.income}\n`;
   csv += `Donaciones,${stats.donations}\n`;
   csv += `Cooperación,${stats.investments}\n`;
   csv += `Gastos,${stats.expenses}\n`;
@@ -246,7 +246,7 @@ export function generateCsvReport(data: ReportData): void {
   
   // Weekly breakdown
   csv += 'DESGLOSE SEMANAL\n';
-  csv += 'Semana,Inicio,Fin,Ingresos,Donaciones,Cooperación,Gastos,Neto\n';
+  csv += 'Semana,Inicio,Fin,Ingresos netos,Donaciones,Cooperación,Gastos,Neto\n';
   weeklyBreakdown.forEach((week) => {
     csv += `${week.weekNumber},${week.weekStart},${week.weekEnd},${week.income},${week.donations},${week.investments},${week.expenses},${week.net}\n`;
   });

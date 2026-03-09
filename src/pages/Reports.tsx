@@ -204,7 +204,7 @@ export default function Reports() {
           </Card>
           <Card>
             <CardContent className="pt-4">
-              <p className="text-caption text-muted-foreground">Ingresos</p>
+              <p className="text-caption text-muted-foreground">Ingresos netos (ventas)</p>
               <p className="text-xl font-bold text-income mt-1">{formatCurrency(stats.income)}</p>
               {comparisons && (
                 <div className="flex items-center gap-1 mt-1">
@@ -295,7 +295,7 @@ export default function Reports() {
                         {format(new Date(week.weekStart), 'dd/MM')} - {format(new Date(week.weekEnd), 'dd/MM')}
                       </TableCell>
                       <TableCell className="text-right text-income">
-                        {formatCurrency(week.income + week.donations + week.investments)}
+                        {formatCurrency(week.income + week.donations)}
                       </TableCell>
                       <TableCell className="text-right text-expense">
                         {formatCurrency(week.expenses)}

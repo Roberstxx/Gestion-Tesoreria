@@ -22,11 +22,20 @@ export function getInvestmentAmount(transaction: Transaction): number {
 }
 
 export function getTransactionInflow(transaction: Transaction): number {
-  if (
-    transaction.type === 'income' ||
-    transaction.type === 'donation' ||
-    transaction.type === 'investment'
-  ) {
+  if (transaction.type === 'income') {
+    const investmentAmount = transaction.investmentAmount ?? 0;
+    const investmentSource = transaction.investmentSource ?? 'cashbox';
+
+    // Si la inversión salió de caja, el impacto real en caja es la utilidad neta.
+    if (investmentAmount > 0 && investmentSource === 'cashbox') {
+      return transaction.amount - investmentAmount;
+    }
+
+    return transaction.amount;
+  }
+
+  // La cooperación de 10 pesos se reporta por separado y no forma parte del saldo de caja.
+  if (transaction.type === 'donation') {
     return transaction.amount;
   }
   return 0;
@@ -71,7 +80,7 @@ export function getMonthlyStats(
 
   const income = monthTransactions
     .filter((t) => t.type === 'income')
-    .reduce((sum, t) => sum + t.amount, 0);
+    .reduce((sum, t) => sum + getTransactionInflow(t), 0);
 
   const donations = monthTransactions
     .filter((t) => t.type === 'donation')
@@ -84,7 +93,7 @@ export function getMonthlyStats(
     .filter((t) => t.type === 'expense')
     .reduce((sum, t) => sum + t.amount, 0);
 
-  // Resultado neto: toda entrada (ingreso, donación, cooperación) menos gastos
+  // Resultado neto de caja: ingresos (netos) + donaciones - gastos.
   const monthInflows = monthTransactions.reduce((sum, t) => sum + getTransactionInflow(t), 0);
   const monthOutflows = monthTransactions.reduce((sum, t) => sum + getTransactionOutflow(t), 0);
   const net = monthInflows - monthOutflows;
@@ -129,7 +138,7 @@ export function getWeeklyBreakdown(
 
     const income = weekTransactions
       .filter((t) => t.type === 'income')
-      .reduce((sum, t) => sum + t.amount, 0);
+      .reduce((sum, t) => sum + getTransactionInflow(t), 0);
 
     const donations = weekTransactions
       .filter((t) => t.type === 'donation')
@@ -150,7 +159,7 @@ export function getWeeklyBreakdown(
       donations,
       investments,
       expenses,
-      // Resultado semanal: entradas menos gastos
+      // Resultado semanal de caja: ingresos (netos) + donaciones - gastos
       net: weekTransactions.reduce((sum, t) => sum + getTransactionInflow(t), 0) -
         weekTransactions.reduce((sum, t) => sum + getTransactionOutflow(t), 0),
     };

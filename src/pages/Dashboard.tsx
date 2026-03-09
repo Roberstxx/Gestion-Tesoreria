@@ -4,7 +4,7 @@ import { useTreasury } from '@/hooks/useTreasury';
 import { AppLayout, StatCard, QuickActionsGrid, TransactionList } from '@/components/treasury';
 import { Wallet, TrendingUp, Gift, HandCoins, CreditCard, BarChart3 } from 'lucide-react';
 import { format } from 'date-fns';
-import { getInvestmentAmount } from '@/utils/calculations';
+import { getInvestmentAmount, getTransactionInflow } from '@/utils/calculations';
 import { es } from 'date-fns/locale';
 
 export default function Dashboard() {
@@ -37,7 +37,7 @@ export default function Dashboard() {
   }).slice(0, 5);
 
   const allTimeStats = transactions.reduce((acc, transaction) => {
-    if (transaction.type === 'income') acc.income += transaction.amount;
+    if (transaction.type === 'income') acc.income += getTransactionInflow(transaction);
     if (transaction.type === 'donation') acc.donations += transaction.amount;
     if (transaction.type === 'expense') acc.expenses += transaction.amount;
 
@@ -47,7 +47,7 @@ export default function Dashboard() {
   }, { income: 0, donations: 0, investments: 0, expenses: 0 });
 
   const accumulatedNet =
-    allTimeStats.income + allTimeStats.donations + allTimeStats.investments - allTimeStats.expenses;
+    allTimeStats.income + allTimeStats.donations - allTimeStats.expenses;
 
   const handleQuickAction = (type: string) => {
     navigate(`/register?type=${type}`);
@@ -92,7 +92,7 @@ export default function Dashboard() {
       {/* Accumulated Stats Grid */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
         <StatCard
-          title="Ingresos"
+          title="Ingresos netos (ventas)"
           value={allTimeStats.income}
           variant="income"
           icon={<TrendingUp className="h-5 w-5 text-income" />}
